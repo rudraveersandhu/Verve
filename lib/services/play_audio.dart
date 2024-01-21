@@ -27,19 +27,37 @@ import 'package:just_audio/just_audio.dart';
 class PlayAudio with ChangeNotifier {
   final AudioPlayer audioPlayer = AudioPlayer();
 
+  PlayAudio() {
+    // Add a listener to observe state changes
+    audioPlayer.playerStateStream.listen((playerState) {
+      print('Player state changed: $playerState');
+      // You can print other relevant information here based on the state if needed
+      print('Duration: ${getDuration()} seconds');
+      print('Current Position: ${getCurrentPosition()} seconds');
+
+      // Check for the condition to reset position
+      if (playerState.playing &&
+          playerState.processingState == ProcessingState.completed) {
+        print('Resetting player position to initial');
+        audioPlayer.seek(Duration(seconds: 0));
+      }
+    });
+  }
+
   Future<void> initializeAudioPlayer(String filePath) async {
     await audioPlayer.setFilePath(filePath);
     notifyListeners();
   }
-  getDuration(){
-    return audioPlayer.duration?.inSeconds;
+
+  int getDuration() {
+    return audioPlayer.duration?.inSeconds ?? 0;
   }
 
-  getCurrentPosition(){
+  int getCurrentPosition() {
     return audioPlayer.position.inSeconds;
   }
 
-  Future<void> playAudio( ) async {
+  Future<void> playAudio() async {
     getDuration();
     await audioPlayer.play();
     notifyListeners();
@@ -61,3 +79,5 @@ class PlayAudio with ChangeNotifier {
     super.dispose();
   }
 }
+
+
