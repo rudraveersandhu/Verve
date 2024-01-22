@@ -20,6 +20,8 @@
 // * Project Git: https://github.com/rudraveersandhu/Verve
 // *
 
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:verve/screens/home_screen.dart';
 import 'package:hive_flutter/adapters.dart';
@@ -48,14 +50,16 @@ class _SplashScreenState extends State<SplashScreen> {
   void initState(){
     makePlaylist('My Songs');
     makePlaylist('blank');
+
     makePlaylist('Trending');
     makePlaylist('Punjabi');
     makePlaylist('Top10Indian');
     makePlaylist('EngRom');
-    setRecomendations('Trending', 20, 'PLMC9KNkIncKseYxDN2niH6glGRWKsLtde');
-    setRecomendations('Punjabi', 20, 'PLFFyMei_d85XIZGAtpgX6SKyEqOmyGlSq');
-    setRecomendations('Top10Indian', 20, 'PLFFyMei_d85U1Rm4g12FgpLw484_LP1Jy');
-    setRecomendations('EngRom', 20, 'PLgzTt0k8mXzE6H9DDgiY7Pd8pKZteis48');
+
+    setRecomendations('Top10Indian', 58, 'PLFFyMei_d85U1Rm4g12FgpLw484_LP1Jy');
+    setRecomendations('Trending', 200, 'PLMC9KNkIncKseYxDN2niH6glGRWKsLtde');
+    setRecomendations('Punjabi', 166, 'PLFFyMei_d85XIZGAtpgX6SKyEqOmyGlSq');
+    setRecomendations('EngRom', 189, 'PLgzTt0k8mXzE6H9DDgiY7Pd8pKZteis48');
     readLastSong();
 
     Future.delayed(
@@ -82,10 +86,9 @@ class _SplashScreenState extends State<SplashScreen> {
     var playlistProvider =
     Provider.of<PlaylistProvider>(context, listen: false);
     final nav = Provider.of<Playlists>(context, listen: false);
-    final box = await Hive.openBox('playlists');
+    final box = await Hive.openBox(playlistName);
 
-
-    List<dynamic> storedPlaylists = box.get('playlists', defaultValue: []);
+    List<dynamic> storedPlaylists = box.get(playlistName, defaultValue: []);
 
     // Find the playlist
     var mySongsPlaylist = storedPlaylists.firstWhere(
@@ -93,33 +96,40 @@ class _SplashScreenState extends State<SplashScreen> {
       orElse: () => {
         'name': playlistName,
         'songs': [],
-        'about' : ''
+        'about': '',
       },
     );
 
-    setState(() {
-
-      if (!nav.playlist.contains(playlistName)) {
+    if (!nav.playlist.contains(playlistName)) {
+      setState(() {
         nav.playlist.add(playlistName);
         playlistProvider.updatePlaylist(nav.playlist);
-      }
-    });
+      });
+    }
 
     mySongsPlaylist['about'] = about;
 
+
     List<dynamic> songs = mySongsPlaylist['songs'];
 
-    for(int i=0;i<NumOfItems;i++){
+    for (int i = 0; i < min(NumOfItems, 4); i++) {
       var song = playlistVideos[i];
+      mySongsPlaylist['ab${i + 1}'] = 'https://img.youtube.com/vi/${song.id}/hqdefault.jpg';
+      print(song.time.toString());
       songs.add({
         'songTitle': song.title.toString(),
         'songAuthor': song.author.toString(),
         'tUrl': "https://img.youtube.com/vi/${song.id}/hqdefault.jpg",
         'vId': song.id.toString(),
         'thumbnail': "",
+        'date' : song.date.toString()
+
+        //'ab${i + 1}': "https://img.youtube.com/vi/${song.id}/hqdefault.jpg"
       });
     }
-    box.put('playlists', storedPlaylists);
+
+
+    box.put(playlistName, storedPlaylists); // Put the updated playlist into the Hive box
   }
 
   getPlaylists() async {
