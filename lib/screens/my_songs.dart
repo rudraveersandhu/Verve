@@ -194,7 +194,7 @@ class _MySongsState extends State<MySongs> {
                               onTap: () async {
                                 await _updateCardColor(songDetails['tUrl'].toString());
                                 updateRetain(songDetails['songTitle'].toString(), songDetails['songAuthor'].toString(), songDetails['tUrl'].toString(), songDetails['vId'].toString(), songDetails['tUrl'].toString());
-                                audio.initializeAudioPlayer(songDetails['vId'].toString());
+                                audio.initializeAudioPlayer(songDetails['vId'].toString(),'downloaded');
                                 audio.playAudio();
                                 setState(() {
                                   model.isCardVisible = true;

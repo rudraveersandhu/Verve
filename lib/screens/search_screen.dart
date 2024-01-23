@@ -21,6 +21,8 @@
 // *
 
 
+
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/adapters.dart';
 import 'package:palette_generator/palette_generator.dart';
@@ -40,6 +42,7 @@ class SearchScreen extends StatefulWidget {
 }
 
 class _SearchScreenState extends State<SearchScreen> {
+  int currentlyPlayingIndex = -1;
   String currentThumb = '';
   String currentTitle = '';
   String currentAuthor = '';
@@ -52,6 +55,8 @@ class _SearchScreenState extends State<SearchScreen> {
   String vUrl = '';
   String audpath = "";
   TextEditingController _textEditingController = TextEditingController();
+  late List<bool> isPlayingList ;
+
 
   @override
   void dispose() {
@@ -65,6 +70,8 @@ class _SearchScreenState extends State<SearchScreen> {
       var searchList = await yt.search(query);
       setState(() {
         _searchResults = searchList;
+        isPlayingList = List.generate(_searchResults.length, (index) => false);
+
       });
     } catch (e) {
       //print('Error fetching YouTube videos: $e');
@@ -75,7 +82,6 @@ class _SearchScreenState extends State<SearchScreen> {
   void initState() {
     super.initState();
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -99,7 +105,6 @@ class _SearchScreenState extends State<SearchScreen> {
         child: SingleChildScrollView(
           child: Padding(
             padding: const EdgeInsets.only(
-
               top: 30.0,
             ),
             child: Stack(
@@ -159,7 +164,7 @@ class _SearchScreenState extends State<SearchScreen> {
                           },
                           decoration: InputDecoration(
                             contentPadding:
-                            const EdgeInsets.symmetric(vertical: 0),
+                                const EdgeInsets.symmetric(vertical: 0),
                             filled: true,
                             fillColor: Colors.white,
                             border: OutlineInputBorder(
@@ -178,115 +183,265 @@ class _SearchScreenState extends State<SearchScreen> {
                                     hasUserSearched = false;
                                   });
                                 },
-                                child: hasUserSearched ? Icon(
-                                    Icons.delete_outline) : Icon(
-                                  Icons.delete_outline,
-                                  color: Colors.white,)),
+                                child: hasUserSearched
+                                    ? Icon(Icons.delete_outline)
+                                    : Icon(
+                                        Icons.delete_outline,
+                                        color: Colors.white,
+                                      )),
                           ),
                         ),
                       ),
                       const SizedBox(height: 25),
-                      Divider(color: Colors.grey.shade700, height: 0,
-                        indent: 0,),
+                      Divider(
+                        color: Colors.grey.shade700,
+                        height: 0,
+                        indent: 0,
+                      ),
                       GestureDetector(
                         onLongPress: () {
                           _focusNode.unfocus();
                         },
                         child: SizedBox(
                           height: 626, // height above bottom nav bar
-
                           child: hasUserSearched
                               ? ListView.builder(
-                            shrinkWrap: true,
-                            itemCount: _searchResults.length,
-                            itemBuilder: (context, index) {
-                              var vid = _searchResults[index];
-                              var thumbnailUrl = _searchResults[index]
-                                  .thumbnails.highResUrl;
-                              var tempUrl = _searchResults[index].thumbnails
-                                  .lowResUrl;
-                              return Padding(
-                                padding: const EdgeInsets.only(
-                                    left: 15, right: 15),
-                                child: ListTile(
-                                  leading: Container(
-                                    width: 55.0,
-                                    height: 55.0,
-                                    decoration: BoxDecoration(
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: Colors.black.withOpacity(
-                                              0.8),
-                                          spreadRadius: 2,
-                                          blurRadius: 7,
-                                          offset: Offset(2,
-                                              3), // changes the shadow position
-                                        ),
-                                      ],
-                                      color: Colors.orange,
-                                      borderRadius: BorderRadius.circular(
-                                          5.0),
-                                    ),
-                                    child: ClipRRect(
-                                      borderRadius: BorderRadius.circular(5),
-                                      child: PhotoView(
-                                        imageProvider: NetworkImage(
-                                            tempUrl
-                                        ),
-                                        customSize: Size(120, 120),
-                                        enableRotation: true,
-                                        backgroundDecoration: BoxDecoration(
-                                          color: Theme
-                                              .of(context)
-                                              .canvasColor,
+                                  shrinkWrap: true,
+                                  itemCount: _searchResults.length,
+                                  itemBuilder: (context, index) {
+
+                                    var vid = _searchResults[index] ;
+                                    var thumbnailUrl = _searchResults[index].thumbnails.highResUrl ;
+                                    var tempUrl = _searchResults[index].thumbnails.lowResUrl ;
+
+                                    return Padding(
+                                      padding: const EdgeInsets.only(
+                                          left: 15, right: 15),
+                                      child: GestureDetector(
+                                        // Stream Logic
+                                        onTap: () async { //Stream logic
+                                          await _updateCardColor(tempUrl);
+                                          vId = vid.id.toString();
+                                          audpath = await DownloadVideo().downloadVideo(vId, 'stream');
+                                          audio.initializeAudioPlayer(audpath,'stream');
+                                          audio.playAudio();
+
+                                          currentTitle = _searchResults[index].title;
+                                          currentAuthor = _searchResults[index].author;
+                                          updateRetain(currentTitle, currentAuthor, thumbnailUrl, audpath, tempUrl);
+
+                                          if (!isPlayingList[index]) { // Start playing the song
+                                            model.playButtonOn = true;
+                                            audio.initializeAudioPlayer(audpath,'stream');
+                                            audio.playAudio();
+                                          } else {  // Pause the song
+                                            audio.pauseAudio();
+                                            model.playButtonOn = false;
+                                            print('Pausing song at index $index');
+                                          }
+
+                                          setState(() {
+                                            isPlayingList[index] = !isPlayingList[index]; // Toggle the play/pause state for the clicked item
+
+                                            if (currentlyPlayingIndex != index) {
+                                              if (currentlyPlayingIndex != -1) { // If a new item is clicked, this stops the currently playing item
+                                                isPlayingList[currentlyPlayingIndex] = false;
+                                              }
+                                              currentlyPlayingIndex = index; // Updating the currently playing index
+                                            }
+
+                                            model.isCardVisible = true;
+                                            model.tUrl = thumbnailUrl;
+                                            model.currentTitle = currentTitle;
+                                            model.currentAuthor = currentAuthor;
+                                            model.filePath = audpath;
+                                            model.isCardVisible = true;
+                                            //model.playButtonOn = isPlayingList[index];
+                                          });
+                                        },
+                                        child: Container(
+                                          width: MediaQuery.of(context).size.width,
+                                          height: 95,
+                                          child: Row(
+                                            children: [
+                                              Padding(
+                                                padding: const EdgeInsets.only(
+                                                    left: 10.0),
+                                                child: Container(
+                                                  width: 60.0,
+                                                  height: 60.0,
+                                                  decoration: BoxDecoration(
+                                                    boxShadow: [
+                                                      BoxShadow(
+                                                        color: Colors.black
+                                                            .withOpacity(0.8),
+                                                        spreadRadius: 2,
+                                                        blurRadius: 7,
+                                                        offset: Offset(2,
+                                                            3), // changes the shadow position
+                                                      ),
+                                                    ],
+                                                    color: Colors.orange,
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            5.0),
+                                                  ),
+                                                  child: ClipRRect(
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            5),
+                                                    child: PhotoView(
+                                                      imageProvider:
+                                                          NetworkImage(tempUrl),
+                                                      customSize: Size(110, 110),
+                                                      enableRotation: true,
+                                                      backgroundDecoration:
+                                                          BoxDecoration(
+                                                        color: Theme.of(context)
+                                                            .canvasColor,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                              Padding(
+                                                padding: const EdgeInsets.only(
+                                                    left: 20,
+                                                    top: 15,
+                                                    //bottom: 15,
+                                                ),
+                                                child: Container(
+                                                  width: 200,
+                                                  padding: EdgeInsets.zero,
+                                                  child: Column(
+                                                    crossAxisAlignment:
+                                                        CrossAxisAlignment
+                                                            .start,
+                                                    children: [
+                                                      Text(
+                                                        _searchResults[index]
+                                                            .title,
+                                                        maxLines: 2,
+                                                        overflow: TextOverflow
+                                                            .ellipsis,
+                                                        style: const TextStyle(
+                                                          color: Colors.white,
+                                                          fontSize: 14,
+                                                          //fontWeight: FontWeight.w700,
+                                                        ),
+                                                      ),
+                                                      Text(
+                                                        _searchResults[index].author,
+                                                        maxLines: 1,
+                                                        style: const TextStyle(color: Colors.grey),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                              ),
+                                              //SizedBox(width: 5,),
+                                              Padding(
+                                                padding: const EdgeInsets.only(
+                                                    left: 20.0),
+                                                child: Container(
+                                                  width: 90,
+                                                  child: Row(
+                                                    children: [
+                                                      GestureDetector(
+                                                        // Download actions
+                                                        onTap: () async {
+                                                          // Download actions
+                                                          await _updateCardColor(tempUrl);
+                                                          vId =
+                                                              vid.id.toString();
+                                                          audpath = await DownloadVideo().downloadVideo(vId, 'download');
+                                                          currentTitle = _searchResults[index].title;
+                                                          currentAuthor = _searchResults[index].author;
+                                                          updateRetain(currentTitle, currentAuthor, thumbnailUrl, audpath, tempUrl);
+
+                                                          audio.initializeAudioPlayer(audpath,'downloaded');
+                                                          audio.playAudio();
+
+                                                          setState(() {
+                                                            model.isCardVisible =
+                                                                true;
+                                                            model.tUrl =
+                                                                thumbnailUrl;
+                                                            model.currentTitle =
+                                                                currentTitle;
+                                                            model.currentAuthor =
+                                                                currentAuthor;
+                                                            model.filePath =
+                                                                audpath;
+                                                            model.isCardVisible =
+                                                                true;
+                                                            model.playButtonOn =
+                                                                true;
+                                                          });
+                                                        },
+                                                        child: Icon(
+                                                          CupertinoIcons.down_arrow,
+                                                          color: Colors.white,
+                                                        ),
+                                                      ),
+                                                      SizedBox(width: 40),
+                                                      GestureDetector(
+                                                        // Stream Logic
+                                                        onTap: () async { //Stream logic
+                                                          await _updateCardColor(tempUrl);
+                                                          vId = vid.id.toString();
+                                                          audpath = await DownloadVideo().downloadVideo(vId, 'stream');
+                                                          audio.initializeAudioPlayer(audpath,'stream');
+                                                          audio.playAudio();
+
+                                                          currentTitle = _searchResults[index].title;
+                                                          currentAuthor = _searchResults[index].author;
+                                                          updateRetain(currentTitle, currentAuthor, thumbnailUrl, audpath, tempUrl);
+
+                                                          if (!isPlayingList[index]) { // Start playing the song
+                                                            model.playButtonOn = true;
+                                                            audio.playAudio();
+                                                          } else {  // Pause the song
+                                                            audio.pauseAudio();
+                                                            model.playButtonOn = false;
+                                                            print('Pausing song at index $index');
+                                                          }
+
+                                                          setState(() {
+                                                            isPlayingList[index] = !isPlayingList[index]; // Toggle the play/pause state for the clicked item
+
+                                                            if (currentlyPlayingIndex != index) {
+                                                              if (currentlyPlayingIndex != -1) { // If a new item is clicked, this stops the currently playing item
+                                                                isPlayingList[currentlyPlayingIndex] = false;
+                                                              }
+                                                              currentlyPlayingIndex = index; // Updating the currently playing index
+                                                            }
+
+                                                            model.isCardVisible = true;
+                                                            model.tUrl = thumbnailUrl;
+                                                            model.currentTitle = currentTitle;
+                                                            model.currentAuthor = currentAuthor;
+                                                            model.filePath = audpath;
+                                                            model.isCardVisible = true;
+                                                            //model.playButtonOn = isPlayingList[index];
+                                                          });
+                                                          },
+                                                        child: Icon(
+                                                          isPlayingList[index] && model.playButtonOn ? CupertinoIcons.pause : CupertinoIcons.play_arrow_solid,
+                                                          color: Colors.white,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
                                         ),
                                       ),
-                                    ),
-                                  ),
-                                  title: Text(
-                                    _searchResults[index].title,
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 14,
-                                      //fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                  subtitle: Text(
-                                    _searchResults[index].author,
-                                    style: const TextStyle(
-                                      color: Colors.grey,
-                                    ),
-                                  ),
-                                  onTap: () async {
-                                    await _updateCardColor(tempUrl);
-                                    vId = vid.id.toString();
-                                    audpath =
-                                    await DownloadVideo().downloadVideo(vId);
-                                    currentTitle =
-                                        _searchResults[index].title;
-                                    currentAuthor =
-                                        _searchResults[index].author;
-                                    updateRetain(currentTitle, currentAuthor,
-                                        thumbnailUrl, audpath, tempUrl);
-
-                                    audio.initializeAudioPlayer(audpath);
-                                    audio.playAudio();
-                                    setState(() {
-                                      model.isCardVisible = true;
-                                      model.tUrl = thumbnailUrl;
-                                      model.currentTitle = currentTitle;
-                                      model.currentAuthor = currentAuthor;
-                                      model.filePath = audpath;
-                                      model.isCardVisible = true;
-                                      model.playButtonOn = true;
-                                    });
+                                    );
                                   },
-                                ),
-                              );
-                            },
-                          )
+                                )
                               : Container(),
                         ),
                       )
@@ -299,25 +454,20 @@ class _SearchScreenState extends State<SearchScreen> {
         ),
       ),
     );
-
   }
 
   Future<void> updateMySongs(String songTitle, String artist, String thumb,
       String audPath, String tempUrl) async {
-    var playlistProvider = Provider.of<PlaylistProvider>(
-        context, listen: false);
+    var playlistProvider =
+        Provider.of<PlaylistProvider>(context, listen: false);
     final nav = Provider.of<Playlists>(context, listen: false);
     final box = await Hive.openBox('playlists');
 
     List<dynamic> storedPlaylists = box.get('playlists', defaultValue: []);
 
     var mySongsPlaylist = storedPlaylists.firstWhere(
-          (playlist) => playlist['name'] == 'My Songs',
-      orElse: () =>
-      {
-        'name': 'My Songs',
-        'songs': []
-      },
+      (playlist) => playlist['name'] == 'My Songs',
+      orElse: () => {'name': 'My Songs', 'songs': []},
     );
 
     setState(() {
@@ -332,12 +482,11 @@ class _SearchScreenState extends State<SearchScreen> {
     List<dynamic> songs = mySongsPlaylist['songs'];
 
     bool isSongAlreadyPresent = songs.any((song) =>
-    song['songTitle'] == songTitle && song['songAuthor'] == artist);
+        song['songTitle'] == songTitle && song['songAuthor'] == artist);
 
     if (isSongAlreadyPresent) {
       print('Song is already present in "My Songs" playlist.');
     } else {
-
       songs.add({
         'songTitle': songTitle,
         'songAuthor': artist,
@@ -352,7 +501,6 @@ class _SearchScreenState extends State<SearchScreen> {
     }
   }
 
-
   void updateRetain(String songTitle, String artist, String thumb,
       String audPath, String tempUrl) async {
     final box = await Hive.openBox('retain');
@@ -363,8 +511,11 @@ class _SearchScreenState extends State<SearchScreen> {
     box.put('tempUrl', tempUrl);
   }
 
+
+
   Future<void> _updateCardColor(String thumbnailUrl) async {
-    PaletteGenerator paletteGenerator = await PaletteGenerator.fromImageProvider(NetworkImage(thumbnailUrl));
+    PaletteGenerator paletteGenerator =
+        await PaletteGenerator.fromImageProvider(NetworkImage(thumbnailUrl));
     final model = context.read<BottomPlayerModel>();
     final box = await Hive.openBox('retain');
 

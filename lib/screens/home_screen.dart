@@ -165,7 +165,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                                       text: model.currentTitle,
                                                       style: TextStyle(
                                                         fontSize: 14.0,
-                                                        color: Colors.grey.shade100,
+                                                        color: Colors.black,
                                                       ),
                                                       scrollAxis: Axis.horizontal,
                                                       crossAxisAlignment: CrossAxisAlignment.start,

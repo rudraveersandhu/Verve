@@ -1036,6 +1036,7 @@ class _StartScreenState extends State<StartScreen> {
                                             ABmodel.about =
                                                 songDetails['about'].toString();
                                           });
+
                                           updateRetain(
                                               songDetails['songTitle']
                                                   .toString(),
@@ -1845,9 +1846,6 @@ class _StartScreenState extends State<StartScreen> {
           'thumbnail': ""
         });
       }
-
-      print("returning good playlist");
-      print(playlistDetails);
 
       return playlistDetails;
     } else {

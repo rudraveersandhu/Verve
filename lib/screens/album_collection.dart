@@ -29,9 +29,9 @@ class _AlbumCollectionState extends State<AlbumCollection> {
     print("Extent after: $extentAfter");
     print("--------------------------------------------");
 
-      _controller1.jumpTo(_controller2.offset);
-      track1=true;
-      print('GPT');
+    _controller1.jumpTo(_controller2.offset);
+    track1 = true;
+    print('GPT');
   }
 
   @override
@@ -65,9 +65,14 @@ class _AlbumCollectionState extends State<AlbumCollection> {
         gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [ABmodel.cardBackgroundColor.withAlpha(100), Colors.black.withOpacity(.96)],
-            stops: [0.3,.65]
-        ),
+            colors: [
+              ABmodel.cardBackgroundColor.withAlpha(100),
+              Colors.black.withOpacity(.96)
+            ],
+            stops: [
+              0.3,
+              .65
+            ]),
       ),
       child: Stack(
         children: [
@@ -75,12 +80,12 @@ class _AlbumCollectionState extends State<AlbumCollection> {
               physics: const BouncingScrollPhysics(),
               controller: _controller1,
               headerSliverBuilder: (
-                  BuildContext context,
-                  bool innerBoxScrolled,
-                  ) {
+                BuildContext context,
+                bool innerBoxScrolled,
+              ) {
                 return <Widget>[
                   SliverAppBar(
-                    expandedHeight: 260 ,
+                    expandedHeight: 260,
                     backgroundColor: ABmodel.cardBackgroundColor.withAlpha(500),
                     elevation: 0,
                     pinned: true,
@@ -89,9 +94,9 @@ class _AlbumCollectionState extends State<AlbumCollection> {
                     automaticallyImplyLeading: true,
                     flexibleSpace: LayoutBuilder(
                       builder: (
-                          BuildContext context,
-                          BoxConstraints constraints,
-                          ) {
+                        BuildContext context,
+                        BoxConstraints constraints,
+                      ) {
                         return FlexibleSpaceBar(
                           background: GestureDetector(
                             child: Column(
@@ -122,15 +127,19 @@ class _AlbumCollectionState extends State<AlbumCollection> {
                                               height: 100,
                                               width: 100,
                                               child: ClipRRect(
-                                                borderRadius: BorderRadius.only(bottomRight: Radius.zero,topLeft: Radius.circular(15)),
+                                                borderRadius: BorderRadius.only(
+                                                    bottomRight: Radius.zero,
+                                                    topLeft:
+                                                        Radius.circular(15)),
                                                 child: PhotoView(
-                                                  imageProvider: NetworkImage(
-                                                      ABmodel.ab1
-                                                  ),
+                                                  imageProvider:
+                                                      NetworkImage(ABmodel.ab1),
                                                   customSize: Size(180, 180),
                                                   enableRotation: true,
-                                                  backgroundDecoration: BoxDecoration(
-                                                    color: Theme.of(context).canvasColor,
+                                                  backgroundDecoration:
+                                                      BoxDecoration(
+                                                    color: Theme.of(context)
+                                                        .canvasColor,
                                                   ),
                                                 ),
                                               ),
@@ -143,15 +152,20 @@ class _AlbumCollectionState extends State<AlbumCollection> {
                                               height: 100,
                                               width: 100,
                                               child: ClipRRect(
-                                                borderRadius: BorderRadius.only(bottomRight: Radius.zero,topRight: Radius.circular(15),bottomLeft: Radius.zero),
+                                                borderRadius: BorderRadius.only(
+                                                    bottomRight: Radius.zero,
+                                                    topRight:
+                                                        Radius.circular(15),
+                                                    bottomLeft: Radius.zero),
                                                 child: PhotoView(
-                                                  imageProvider: NetworkImage(
-                                                      ABmodel.ab2
-                                                  ),
+                                                  imageProvider:
+                                                      NetworkImage(ABmodel.ab2),
                                                   customSize: Size(180, 180),
                                                   enableRotation: true,
-                                                  backgroundDecoration: BoxDecoration(
-                                                    color: Theme.of(context).canvasColor,
+                                                  backgroundDecoration:
+                                                      BoxDecoration(
+                                                    color: Theme.of(context)
+                                                        .canvasColor,
                                                   ),
                                                 ),
                                               ),
@@ -168,15 +182,21 @@ class _AlbumCollectionState extends State<AlbumCollection> {
                                               height: 100,
                                               width: 100,
                                               child: ClipRRect(
-                                                borderRadius: BorderRadius.only(bottomRight: Radius.zero,topRight: Radius.zero,bottomLeft: Radius.circular(15),),
+                                                borderRadius: BorderRadius.only(
+                                                  bottomRight: Radius.zero,
+                                                  topRight: Radius.zero,
+                                                  bottomLeft:
+                                                      Radius.circular(15),
+                                                ),
                                                 child: PhotoView(
-                                                  imageProvider: NetworkImage(
-                                                      ABmodel.ab3
-                                                  ),
+                                                  imageProvider:
+                                                      NetworkImage(ABmodel.ab3),
                                                   customSize: Size(180, 180),
                                                   enableRotation: true,
-                                                  backgroundDecoration: BoxDecoration(
-                                                    color: Theme.of(context).canvasColor,
+                                                  backgroundDecoration:
+                                                      BoxDecoration(
+                                                    color: Theme.of(context)
+                                                        .canvasColor,
                                                   ),
                                                 ),
                                               ),
@@ -189,15 +209,17 @@ class _AlbumCollectionState extends State<AlbumCollection> {
                                               height: 100,
                                               width: 100,
                                               child: ClipRRect(
-                                                borderRadius: BorderRadius.circular(10),
+                                                borderRadius:
+                                                    BorderRadius.circular(10),
                                                 child: PhotoView(
-                                                  imageProvider: NetworkImage(
-                                                      ABmodel.ab4
-                                                  ),
+                                                  imageProvider:
+                                                      NetworkImage(ABmodel.ab4),
                                                   customSize: Size(180, 180),
                                                   enableRotation: true,
-                                                  backgroundDecoration: BoxDecoration(
-                                                    color: Theme.of(context).canvasColor,
+                                                  backgroundDecoration:
+                                                      BoxDecoration(
+                                                    color: Theme.of(context)
+                                                        .canvasColor,
                                                   ),
                                                 ),
                                               ),
@@ -224,192 +246,255 @@ class _AlbumCollectionState extends State<AlbumCollection> {
                   color: Colors.transparent,
                   child: Container(
                       child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        //mainAxisAlignment: MainAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    //mainAxisAlignment: MainAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Padding(
-                                padding: const EdgeInsets.only(left: 15.0,bottom: 35,top: 15),
-                                child: Container(width: MediaQuery.of(context).size.width- 120,
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                          Padding(
+                            padding: const EdgeInsets.only(
+                                left: 15.0, bottom: 35, top: 15),
+                            child: Container(
+                                width: MediaQuery.of(context).size.width - 120,
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
                                       children: [
-                                        Row(
+                                        Icon(
+                                          CupertinoIcons.waveform_path,
+                                          color: Colors.grey.shade500,
+                                        ),
+                                        SizedBox(
+                                          width: 7,
+                                        ),
+                                        Column(
                                           children: [
-                                            Icon(CupertinoIcons.waveform_path,color: Colors.grey.shade500,),
-                                            SizedBox(width: 7,),
-                                            Column(
-                                              children: [
-                                                Text("Listen on verve",maxLines: 3,style: TextStyle(color: Colors.grey.shade500,fontSize: 12,fontWeight: FontWeight.w500),),
-
-                                              ],
+                                            Text(
+                                              "Listen on verve",
+                                              maxLines: 3,
+                                              style: TextStyle(
+                                                  color: Colors.grey.shade500,
+                                                  fontSize: 12,
+                                                  fontWeight: FontWeight.w500),
                                             ),
-
                                           ],
                                         ),
-                                        Padding(
-                                          padding: const EdgeInsets.only(left: 0,top: 10
-                                          ),
-                                          child: Text(ABmodel.albumName,maxLines: 3,style: TextStyle(color: Colors.white,fontSize: 18,fontWeight: FontWeight.w600),),
-                                        ),
                                       ],
-                                    )),
-                              ),
-                              Padding(
-                                padding: const EdgeInsets.all(10.0),
-                                child: Icon(Icons.play_circle_filled_rounded,color: Colors.white,size: 77,),
-                              ),
-                            ],
+                                    ),
+                                    Padding(
+                                      padding: const EdgeInsets.only(
+                                          left: 0, top: 10),
+                                      child: Text(
+                                        ABmodel.albumName,
+                                        maxLines: 3,
+                                        style: TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.w600),
+                                      ),
+                                    ),
+                                  ],
+                                )),
                           ),
+                          Padding(
+                            padding: const EdgeInsets.all(10.0),
+                            child: Icon(
+                              Icons.play_circle_filled_rounded,
+                              color: Colors.white,
+                              size: 77,
+                            ),
+                          ),
+                        ],
+                      ),
+                      FutureBuilder<List<Map<String, Object>>>(
+                        future: accessPlaylist(ABmodel.playlistName),
+                        builder: (context, snapshot) {
+                          if (snapshot.connectionState ==
+                              ConnectionState.waiting) {
+                            return const CircularProgressIndicator();
+                          } else if (snapshot.hasError) {
+                            return Text(
+                              'Error: ${snapshot.error}',
+                              style: TextStyle(color: Colors.white),
+                            );
+                          } else {
+                            List<Map<String, Object>>? playlistDetails =
+                                snapshot.data;
+                            return Container(
+                              height: MediaQuery.of(context).size.height,
+                              width: MediaQuery.of(context).size.width,
+                              child: ListView.builder(
+                                controller: _controller2,
+                                shrinkWrap: true,
+                                scrollDirection: Axis.vertical,
+                                padding: EdgeInsets.zero,
+                                itemCount: playlistDetails?.length,
+                                itemBuilder: (context, index) {
+                                  Map<String, Object>? songDetails =
+                                      playlistDetails?[index];
 
+                                  return GestureDetector(
+                                    onTap: () async {
+                                      final model = context.read<BottomPlayerModel>();
+                                      final audio = Provider.of<PlayAudio>(
+                                          context,
+                                          listen: false);
+                                      String audpath = await DownloadVideo().downloadVideo(songDetails['vId'].toString(),'download');
+                                      await _updateCardColor(
+                                          songDetails['tUrl'].toString());
+                                      updateRetain(
+                                          songDetails['songTitle'].toString(),
+                                          songDetails['songAuthor'].toString(),
+                                          songDetails['tUrl'].toString(),
+                                          audpath,
+                                          songDetails['tUrl'].toString());
 
-                          FutureBuilder<List<Map<String, Object>>>(
-                            future: accessPlaylist(ABmodel.playlistName),
-                            builder: (context, snapshot) {
-                              if (snapshot.connectionState == ConnectionState.waiting) {
-                                return const CircularProgressIndicator();
-                              } else if (snapshot.hasError) {
-                                return Text('Error: ${snapshot.error}',style: TextStyle(color: Colors.white),);
-                              } else {
-                                List<Map<String, Object>>? playlistDetails = snapshot.data;
-                                return Container(
-                                  height: MediaQuery.of(context).size.height,
-                                  width: MediaQuery.of(context).size.width ,
-                                  child: ListView.builder(
-                                    controller: _controller2,
-                                    shrinkWrap: true,
-                                    scrollDirection: Axis.vertical,
-                                    padding: EdgeInsets.zero,
-                                    itemCount: playlistDetails?.length,
-                                    itemBuilder: (context, index) {
-                                      Map<String, Object>? songDetails = playlistDetails?[index];
-
-                                      return GestureDetector(
-                                        onTap: () async {
-                                          final model = context.read<BottomPlayerModel>();
-                                          final audio = Provider.of<PlayAudio>(context, listen: false);
-                                          String audpath = await DownloadVideo().downloadVideo(songDetails['vId'].toString());
-                                          await _updateCardColor(songDetails['tUrl'].toString());
-                                          updateRetain(songDetails['songTitle'].toString(), songDetails['songAuthor'].toString(), songDetails['tUrl'].toString(), audpath, songDetails['tUrl'].toString());
-                                          audio.initializeAudioPlayer(audpath);
-                                          audio.playAudio();
-                                          setState(() {
-                                            model.isCardVisible = true;
-                                            model.tUrl = songDetails['tUrl'].toString();
-                                            model.currentTitle = songDetails['songTitle'].toString();
-                                            model.currentAuthor = songDetails['songAuthor'].toString();
-                                            model.filePath = audpath;
-                                            model.isCardVisible = true;
-                                            model.playButtonOn = true;
-                                          });
-
-
-                                        },
-                                        child: Container(height: 70,width: MediaQuery.of(context).size.width-5, color: Colors.transparent,
-                                          child: Row(
+                                      audio.initializeAudioPlayer(audpath,'downloaded');
+                                      audio.playAudio();
+                                      setState(() {
+                                        model.isCardVisible = true;
+                                        model.tUrl =
+                                            songDetails['tUrl'].toString();
+                                        model.currentTitle =
+                                            songDetails['songTitle'].toString();
+                                        model.currentAuthor =
+                                            songDetails['songAuthor']
+                                                .toString();
+                                        model.filePath = audpath;
+                                        model.isCardVisible = true;
+                                        model.playButtonOn = true;
+                                      });
+                                    },
+                                    child: Container(
+                                      height: 70,
+                                      width:
+                                          MediaQuery.of(context).size.width - 5,
+                                      color: Colors.transparent,
+                                      child: Row(
+                                        children: [
+                                          Padding(
+                                            padding: const EdgeInsets.only(
+                                                left: 15.0),
+                                            child: Container(
+                                              width: 60.0,
+                                              height: 60.0,
+                                              decoration: BoxDecoration(
+                                                boxShadow: [
+                                                  BoxShadow(
+                                                    color: Colors.black
+                                                        .withOpacity(0.8),
+                                                    spreadRadius: 2,
+                                                    blurRadius: 7,
+                                                    offset: Offset(2, 3),
+                                                  ),
+                                                ],
+                                                color: Colors.orange,
+                                                borderRadius:
+                                                    BorderRadius.circular(2.0),
+                                              ),
+                                              child: ClipRRect(
+                                                borderRadius:
+                                                    BorderRadius.circular(2),
+                                                child: PhotoView(
+                                                  imageProvider: NetworkImage(
+                                                      songDetails!['tUrl']
+                                                          .toString()),
+                                                  customSize: Size(120, 120),
+                                                  enableRotation: true,
+                                                  backgroundDecoration:
+                                                      BoxDecoration(
+                                                    color: Theme.of(context)
+                                                        .canvasColor,
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                          Column(
                                             children: [
                                               Padding(
-                                                padding: const EdgeInsets.only(left:15.0),
+                                                padding: const EdgeInsets.only(
+                                                    top: 12.0,
+                                                    left: 12,
+                                                    right: 12
+                                                ),
                                                 child: Container(
-                                                  width: 60.0,
-                                                  height: 60.0,
-                                                  decoration: BoxDecoration(
-                                                    boxShadow: [
-                                                      BoxShadow(
-                                                        color: Colors.black.withOpacity(0.8),
-                                                        spreadRadius: 2,
-                                                        blurRadius: 7,
-                                                        offset: Offset(2, 3),
-                                                      ),
-                                                    ],
-                                                    color: Colors.orange,
-                                                    borderRadius: BorderRadius.circular(2.0),
-                                                  ),
-                                                  child: ClipRRect(
-                                                    borderRadius: BorderRadius.circular(2),
-                                                    child: PhotoView(
-                                                      imageProvider: NetworkImage(
-                                                          songDetails!['tUrl'].toString()
-                                                      ),
-                                                      customSize: Size(120, 120),
-                                                      enableRotation: true,
-                                                      backgroundDecoration: BoxDecoration(
-                                                        color: Theme.of(context).canvasColor,
-                                                      ),
+                                                  width: 220,
+                                                  child: Text(
+                                                    songDetails['songTitle']
+                                                        .toString(),
+                                                    maxLines: 1,
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
+                                                    style: const TextStyle(
+                                                      color: Colors.white,
+                                                      fontSize: 14,
+                                                      fontWeight:
+                                                          FontWeight.w600,
                                                     ),
                                                   ),
                                                 ),
                                               ),
-                                              Column(
-                                                children: [
-                                                  Padding(
-                                                    padding: const EdgeInsets.only(top:12.0,left: 12,right: 12),
-                                                    child: Container(
-                                                      width: 220,
-                                                      child: Text(songDetails['songTitle'].toString(),
-                                                        maxLines: 1,
-                                                        overflow: TextOverflow.ellipsis,
-                                                        style: const TextStyle(
-                                                          color: Colors.white,
-                                                          fontSize: 14,
-                                                          fontWeight: FontWeight.w600,
-                                                        ),
-                                                      ),
+                                              Padding(
+                                                padding: const EdgeInsets.only(
+                                                    top: 5.0),
+                                                child: Container(
+                                                  width: 220,
+                                                  child: Text(
+                                                    songDetails['songAuthor']
+                                                        .toString(),
+                                                    style: const TextStyle(
+                                                      color: Colors.grey,
+                                                      fontSize: 13,
+                                                      fontWeight:
+                                                          FontWeight.w500,
                                                     ),
                                                   ),
-                                                  Padding(
-                                                    padding: const EdgeInsets.only(top:5.0),
-                                                    child: Container(
-                                                      width: 220,
-                                                      child: Text(songDetails['songAuthor'].toString(),
-                                                        style: const TextStyle(
-                                                          color: Colors.grey,
-                                                          fontSize: 13,
-                                                          fontWeight: FontWeight.w500,
-                                                        ),),
-                                                    ),
-                                                  ),
-                                                ],
+                                                ),
                                               ),
-                                              SizedBox(width: 15,),
-                                              Icon(Icons.play_arrow,color: Colors.white,size: 33,)
                                             ],
                                           ),
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                );
-                              }
-                            },
-                          )
-                        ],
+                                          SizedBox(
+                                            width: 15,
+                                          ),
+                                          Icon(
+                                            Icons.play_arrow,
+                                            color: Colors.white,
+                                            size: 33,
+                                          )
+                                        ],
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                            );
+                          }
+                        },
                       )
-                  ),
+                    ],
+                  )),
                 ),
-              )
-          )
-
+              ))
         ],
       ),
     );
   }
 
-  Future<List<Map<String, Object>>> accessPlaylist(String targetPlaylistName) async {
-
+  Future<List<Map<String, Object>>> accessPlaylist(
+      String targetPlaylistName) async {
     final box = await Hive.openBox('playlists');
 
     List<dynamic> storedPlaylists = box.get('playlists', defaultValue: []);
 
     var targetPlaylist = storedPlaylists.firstWhere(
-          (playlist) => playlist['name'] == targetPlaylistName,
+      (playlist) => playlist['name'] == targetPlaylistName,
       orElse: () => <String, Object>{},
     );
 
-    box.put('about', targetPlaylist['about']) ;
+    box.put('about', targetPlaylist['about']);
 
     if (targetPlaylist != null) {
       List<dynamic> songs = targetPlaylist['songs'];
@@ -454,7 +539,7 @@ class _AlbumCollectionState extends State<AlbumCollection> {
 
   Future<void> _updateCardColor(String thumbnailUrl) async {
     PaletteGenerator paletteGenerator =
-    await PaletteGenerator.fromImageProvider(NetworkImage(thumbnailUrl));
+        await PaletteGenerator.fromImageProvider(NetworkImage(thumbnailUrl));
     final model = context.read<BottomPlayerModel>();
     final box = await Hive.openBox('retain');
 
@@ -463,6 +548,4 @@ class _AlbumCollectionState extends State<AlbumCollection> {
       box.put('color', paletteGenerator.dominantColor!.color.toString());
     });
   }
-
-
 }

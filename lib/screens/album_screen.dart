@@ -165,12 +165,15 @@ class _AlbumScreenState extends State<AlbumScreen> {
                           onTap: () async {
                             final model = context.read<BottomPlayerModel>();
                             final audio = Provider.of<PlayAudio>(context, listen: false);
-                            String audpath = await DownloadVideo().downloadVideo(ABmodel.vId);
+                            String audpath = await DownloadVideo().downloadVideo(ABmodel.vId,'download');
                             await _updateCardColor(ABmodel.tUrl);
                             updateRetain(ABmodel.currentTitle, ABmodel.currentAuthor, ABmodel.tUrl, audpath, ABmodel.tUrl);
-                            audio.initializeAudioPlayer(audpath);
+
+                            audio.initializeAudioPlayer(audpath,'downloaded');
                             audio.playAudio();
+
                             setState(() {
+
                               model.isCardVisible = true;
                               model.tUrl = ABmodel.tUrl;
                               model.currentTitle = ABmodel.currentTitle;
@@ -178,6 +181,7 @@ class _AlbumScreenState extends State<AlbumScreen> {
                               model.filePath = audpath;
                               model.isCardVisible = true;
                               model.playButtonOn = true;
+
                             });
                           },
                           child: Container(height: 70,width: MediaQuery.of(context).size.width-5, color: Colors.transparent,

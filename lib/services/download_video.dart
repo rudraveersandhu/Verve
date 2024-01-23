@@ -33,26 +33,36 @@ class DownloadVideo {
     return file.existsSync();
   }
 
-  Future<String> downloadVideo(String videoId) async {
+  Future<String> downloadVideo(String videoId, String mode) async {
     final appDocDir = await getApplicationDocumentsDirectory();
     final filePath = '${appDocDir.path}/$videoId.mp3';
 
     if(fileExists(filePath)){
       return filePath;
 
-    } else if (fileExists(filePath) == false){
-
+    } else if (!fileExists(filePath)){
       var youtube = YoutubeExplode();
-
       var streamManifest = await youtube.videos.streamsClient.getManifest(videoId); // Get the stream manifest for the video
       var audioOnlyStreams = streamManifest.audioOnly; // Get the audio-only streams from the manifest
       var audioStream = audioOnlyStreams.where((stream) => stream.audioCodec == 'mp4a.40.2').withHighestBitrate(); // Get the highest quality audio-only stream
-      var audioStreamBytes = await youtube.videos.streamsClient.get(audioStream).toList(); // Get the audio stream as bytes
-      await File(filePath).writeAsBytes(Uint8List.fromList(audioStreamBytes.expand((e) => e).toList()));// Save the audio stream to a file
+
+      if (mode == "download"){  //download logic
+        var audioStreamBytes = await youtube.videos.streamsClient.get(audioStream).toList(); // Get the audio stream as bytes
+        await File(filePath).writeAsBytes(Uint8List.fromList(audioStreamBytes.expand((e) => e).toList()));// Save the audio stream to a file
+        return filePath;
+
+      } else if (mode == "stream") {  //streaming logic
+
+          return audioStream.url.toString();
+      } else {
+        return "Invalid mode used, check the mode for the download function.";
+      }
       youtube.close();
-      return filePath;
+
     }else{
+
       return "error";
+
     }
   }
 }

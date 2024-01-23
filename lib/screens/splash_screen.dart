@@ -20,8 +20,6 @@
 // * Project Git: https://github.com/rudraveersandhu/Verve
 // *
 
-import 'dart:math';
-
 import 'package:flutter/material.dart';
 import 'package:verve/screens/home_screen.dart';
 import 'package:hive_flutter/adapters.dart';
@@ -114,7 +112,7 @@ class _SplashScreenState extends State<SplashScreen> {
     List<dynamic> songs = mySongsPlaylist['songs'];
 
 
-    for(int i=0;i<NumOfItems;i++){
+    for(int i=1;i<NumOfItems;i++){
       var song = playlistVideos[i];
 
       songs.add({
@@ -274,7 +272,7 @@ class _SplashScreenState extends State<SplashScreen> {
     final box = await Hive.openBox('retain');
     String audpath = box.get('audPath').toString();
     final audio = Provider.of<PlayAudio>(context, listen: false);
-    await audio.initializeAudioPlayer(audpath);
+    await audio.initializeAudioPlayer(audpath,'');
   }
 
   @override
