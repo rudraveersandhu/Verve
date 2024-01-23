@@ -30,7 +30,6 @@ import 'package:persistent_bottom_nav_bar/persistent_tab_view.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:verve/models/album.dart';
 import 'package:verve/screens/album_collection.dart';
-import 'package:verve/screens/album_screen.dart';
 import 'package:verve/screens/my_songs.dart';
 import 'package:verve/utilities/playlist_provider.dart';
 import 'package:provider/provider.dart';
@@ -61,7 +60,7 @@ class _StartScreenState extends State<StartScreen> {
   getName() async {
     final box = await Hive.openBox('User');
     setState(() {
-      name = box.get('name');
+      name = box.get('name').toString();
     });
   }
 
@@ -95,7 +94,7 @@ class _StartScreenState extends State<StartScreen> {
     super.initState();
   }
 
-  getRandomNumber(int min, int max){
+  getRandomNumber(int min, int max) {
     Random random = Random();
     // Generate a random number within the specified range
     int randomNumber = min + random.nextInt(max - min + 1);
@@ -969,13 +968,13 @@ class _StartScreenState extends State<StartScreen> {
                       padding: const EdgeInsets.only(
                           left: 15.0, right: 15, bottom: 10),
                       child: Text(
-                                              "Top 100 in India",
-                                              style: TextStyle(
-                      color: Colors.orange.shade600,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 22,
-                                              ),
-                                            ),
+                        "Top 100 in India",
+                        style: TextStyle(
+                          color: Colors.orange.shade600,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 22,
+                        ),
+                      ),
                     ),
                     Container(
                       height: 195,
@@ -1008,16 +1007,21 @@ class _StartScreenState extends State<StartScreen> {
                                     children: [
                                       GestureDetector(
                                         onTap: () async {
-
                                           await _updateAlbumBgColor(
                                               songDetails['tUrl'].toString());
                                           setState(() {
-                                            ABmodel.ab1 = 'https://img.youtube.com/vi/${playlistDetails?[getRandomNumber(0, playlistDetails.length)]['vId']}/hqdefault.jpg';
-                                            ABmodel.ab2 = 'https://img.youtube.com/vi/${playlistDetails?[4]['vId']}/hqdefault.jpg';
-                                            ABmodel.ab3 = 'https://img.youtube.com/vi/${playlistDetails?[6]['vId']}/hqdefault.jpg';
-                                            ABmodel.ab4 = 'https://img.youtube.com/vi/${playlistDetails?[8]['vId']}/hqdefault.jpg';
-                                            ABmodel.playlistName = 'Top10Indian';
-                                            ABmodel.albumName = "India's Top Trending";
+                                            ABmodel.ab1 =
+                                                'https://img.youtube.com/vi/${playlistDetails?[getRandomNumber(0, playlistDetails.length)]['vId']}/hqdefault.jpg';
+                                            ABmodel.ab2 =
+                                                'https://img.youtube.com/vi/${playlistDetails?[4]['vId']}/hqdefault.jpg';
+                                            ABmodel.ab3 =
+                                                'https://img.youtube.com/vi/${playlistDetails?[6]['vId']}/hqdefault.jpg';
+                                            ABmodel.ab4 =
+                                                'https://img.youtube.com/vi/${playlistDetails?[8]['vId']}/hqdefault.jpg';
+                                            ABmodel.playlistName =
+                                                'Top10Indian';
+                                            ABmodel.albumName =
+                                                "India's Top Trending";
 
                                             ABmodel.tUrl =
                                                 songDetails['tUrl'].toString();
@@ -1166,7 +1170,7 @@ class _StartScreenState extends State<StartScreen> {
                               itemCount: playlistDetails?.length,
                               itemBuilder: (context, index) {
                                 Map<String, Object>? songDetails =
-                                playlistDetails?[index];
+                                    playlistDetails?[index];
 
                                 return Padding(
                                   padding: EdgeInsets.only(right: 0, left: 11),
@@ -1174,17 +1178,20 @@ class _StartScreenState extends State<StartScreen> {
                                     children: [
                                       GestureDetector(
                                         onTap: () async {
-
                                           await _updateAlbumBgColor(
                                               songDetails['tUrl'].toString());
                                           setState(() {
-                                            ABmodel.ab1 = 'https://img.youtube.com/vi/${playlistDetails![getRandomNumber(0, playlistDetails.length)]['vId']}/hqdefault.jpg';
-                                            ABmodel.ab2 = 'https://img.youtube.com/vi/${playlistDetails![4]['vId']}/hqdefault.jpg';
-                                            ABmodel.ab3 = 'https://img.youtube.com/vi/${playlistDetails![6]['vId']}/hqdefault.jpg';
-                                            ABmodel.ab4 = 'https://img.youtube.com/vi/${playlistDetails![8]['vId']}/hqdefault.jpg';
+                                            ABmodel.ab1 =
+                                                'https://img.youtube.com/vi/${playlistDetails![getRandomNumber(0, playlistDetails.length)]['vId']}/hqdefault.jpg';
+                                            ABmodel.ab2 =
+                                                'https://img.youtube.com/vi/${playlistDetails![4]['vId']}/hqdefault.jpg';
+                                            ABmodel.ab3 =
+                                                'https://img.youtube.com/vi/${playlistDetails![6]['vId']}/hqdefault.jpg';
+                                            ABmodel.ab4 =
+                                                'https://img.youtube.com/vi/${playlistDetails![8]['vId']}/hqdefault.jpg';
                                             ABmodel.playlistName = 'Punjabi';
-                                            ABmodel.albumName = "Latest Punjabi releases";
-
+                                            ABmodel.albumName =
+                                                "Latest Punjabi releases";
                                           });
                                           //updateRetain(songDetails['songTitle'].toString(), songDetails['songAuthor'].toString(), songDetails['tUrl'].toString(), songDetails['vId'].toString(), songDetails['tUrl'].toString());
                                           PersistentNavBarNavigator
@@ -1193,8 +1200,8 @@ class _StartScreenState extends State<StartScreen> {
                                             screen: AlbumCollection(),
                                             withNavBar: true,
                                             pageTransitionAnimation:
-                                            PageTransitionAnimation
-                                                .cupertino,
+                                                PageTransitionAnimation
+                                                    .cupertino,
                                           );
                                         },
                                         child: Container(
@@ -1203,11 +1210,11 @@ class _StartScreenState extends State<StartScreen> {
                                           decoration: BoxDecoration(
                                             color: Colors.grey.shade900,
                                             borderRadius:
-                                            BorderRadius.circular(16.0),
+                                                BorderRadius.circular(16.0),
                                           ),
                                           child: ClipRRect(
                                             borderRadius:
-                                            BorderRadius.circular(10),
+                                                BorderRadius.circular(10),
                                             child: PhotoView(
                                               imageProvider: NetworkImage(
                                                   songDetails!['tUrl']
@@ -1215,7 +1222,7 @@ class _StartScreenState extends State<StartScreen> {
                                               customSize: Size(280, 280),
                                               enableRotation: true,
                                               backgroundDecoration:
-                                              BoxDecoration(
+                                                  BoxDecoration(
                                                 color: Theme.of(context)
                                                     .canvasColor,
                                               ),
@@ -1236,7 +1243,7 @@ class _StartScreenState extends State<StartScreen> {
                                                 fontWeight: FontWeight.w500,
                                                 color: Colors.white,
                                                 overflow:
-                                                TextOverflow.ellipsis),
+                                                    TextOverflow.ellipsis),
                                           ),
                                         ),
                                       ),
@@ -1250,7 +1257,7 @@ class _StartScreenState extends State<StartScreen> {
                                                 fontSize: 12,
                                                 color: Colors.grey,
                                                 overflow:
-                                                TextOverflow.ellipsis),
+                                                    TextOverflow.ellipsis),
                                           ),
                                         ),
                                       ),
@@ -1312,7 +1319,7 @@ class _StartScreenState extends State<StartScreen> {
                               itemCount: playlistDetails?.length,
                               itemBuilder: (context, index) {
                                 Map<String, Object>? songDetails =
-                                playlistDetails?[index];
+                                    playlistDetails?[index];
 
                                 return Padding(
                                   padding: EdgeInsets.only(right: 0, left: 11),
@@ -1320,16 +1327,20 @@ class _StartScreenState extends State<StartScreen> {
                                     children: [
                                       GestureDetector(
                                         onTap: () async {
-
                                           await _updateAlbumBgColor(
                                               songDetails['tUrl'].toString());
                                           setState(() {
-                                            ABmodel.ab1 = 'https://img.youtube.com/vi/${playlistDetails?[getRandomNumber(0, playlistDetails.length)]['vId']}/hqdefault.jpg';
-                                            ABmodel.ab2 = 'https://img.youtube.com/vi/${playlistDetails?[4]['vId']}/hqdefault.jpg';
-                                            ABmodel.ab3 = 'https://img.youtube.com/vi/${playlistDetails?[6]['vId']}/hqdefault.jpg';
-                                            ABmodel.ab4 = 'https://img.youtube.com/vi/${playlistDetails?[8]['vId']}/hqdefault.jpg';
+                                            ABmodel.ab1 =
+                                                'https://img.youtube.com/vi/${playlistDetails?[getRandomNumber(0, playlistDetails.length)]['vId']}/hqdefault.jpg';
+                                            ABmodel.ab2 =
+                                                'https://img.youtube.com/vi/${playlistDetails?[4]['vId']}/hqdefault.jpg';
+                                            ABmodel.ab3 =
+                                                'https://img.youtube.com/vi/${playlistDetails?[6]['vId']}/hqdefault.jpg';
+                                            ABmodel.ab4 =
+                                                'https://img.youtube.com/vi/${playlistDetails?[8]['vId']}/hqdefault.jpg';
                                             ABmodel.playlistName = 'Trending';
-                                            ABmodel.albumName = "Top Trending Worldwide";
+                                            ABmodel.albumName =
+                                                "Top Trending Worldwide";
 
                                             ABmodel.tUrl =
                                                 songDetails['tUrl'].toString();
@@ -1358,8 +1369,8 @@ class _StartScreenState extends State<StartScreen> {
                                             screen: AlbumCollection(),
                                             withNavBar: true,
                                             pageTransitionAnimation:
-                                            PageTransitionAnimation
-                                                .cupertino,
+                                                PageTransitionAnimation
+                                                    .cupertino,
                                           );
                                         },
                                         child: Container(
@@ -1368,11 +1379,11 @@ class _StartScreenState extends State<StartScreen> {
                                           decoration: BoxDecoration(
                                             color: Colors.grey.shade900,
                                             borderRadius:
-                                            BorderRadius.circular(16.0),
+                                                BorderRadius.circular(16.0),
                                           ),
                                           child: ClipRRect(
                                             borderRadius:
-                                            BorderRadius.circular(10),
+                                                BorderRadius.circular(10),
                                             child: PhotoView(
                                               imageProvider: NetworkImage(
                                                   songDetails!['tUrl']
@@ -1380,7 +1391,7 @@ class _StartScreenState extends State<StartScreen> {
                                               customSize: Size(280, 280),
                                               enableRotation: true,
                                               backgroundDecoration:
-                                              BoxDecoration(
+                                                  BoxDecoration(
                                                 color: Theme.of(context)
                                                     .canvasColor,
                                               ),
@@ -1401,7 +1412,7 @@ class _StartScreenState extends State<StartScreen> {
                                                 fontWeight: FontWeight.w500,
                                                 color: Colors.white,
                                                 overflow:
-                                                TextOverflow.ellipsis),
+                                                    TextOverflow.ellipsis),
                                           ),
                                         ),
                                       ),
@@ -1415,7 +1426,7 @@ class _StartScreenState extends State<StartScreen> {
                                                 fontSize: 12,
                                                 color: Colors.grey,
                                                 overflow:
-                                                TextOverflow.ellipsis),
+                                                    TextOverflow.ellipsis),
                                           ),
                                         ),
                                       ),
@@ -1477,7 +1488,7 @@ class _StartScreenState extends State<StartScreen> {
                               itemCount: playlistDetails?.length,
                               itemBuilder: (context, index) {
                                 Map<String, Object>? songDetails =
-                                playlistDetails?[index];
+                                    playlistDetails?[index];
 
                                 return Padding(
                                   padding: EdgeInsets.only(right: 0, left: 11),
@@ -1485,16 +1496,20 @@ class _StartScreenState extends State<StartScreen> {
                                     children: [
                                       GestureDetector(
                                         onTap: () async {
-
                                           await _updateAlbumBgColor(
                                               songDetails['tUrl'].toString());
                                           setState(() {
-                                            ABmodel.ab1 = 'https://img.youtube.com/vi/${playlistDetails?[getRandomNumber(0, playlistDetails.length)]['vId']}/hqdefault.jpg';
-                                            ABmodel.ab2 = 'https://img.youtube.com/vi/${playlistDetails?[4]['vId']}/hqdefault.jpg';
-                                            ABmodel.ab3 = 'https://img.youtube.com/vi/${playlistDetails?[6]['vId']}/hqdefault.jpg';
-                                            ABmodel.ab4 = 'https://img.youtube.com/vi/${playlistDetails?[8]['vId']}/hqdefault.jpg';
+                                            ABmodel.ab1 =
+                                                'https://img.youtube.com/vi/${playlistDetails?[getRandomNumber(0, playlistDetails.length)]['vId']}/hqdefault.jpg';
+                                            ABmodel.ab2 =
+                                                'https://img.youtube.com/vi/${playlistDetails?[4]['vId']}/hqdefault.jpg';
+                                            ABmodel.ab3 =
+                                                'https://img.youtube.com/vi/${playlistDetails?[6]['vId']}/hqdefault.jpg';
+                                            ABmodel.ab4 =
+                                                'https://img.youtube.com/vi/${playlistDetails?[8]['vId']}/hqdefault.jpg';
                                             ABmodel.playlistName = 'EngRom';
-                                            ABmodel.albumName = "Romatic hits of all time";
+                                            ABmodel.albumName =
+                                                "Romatic hits of all time";
 
                                             ABmodel.tUrl =
                                                 songDetails['tUrl'].toString();
@@ -1523,8 +1538,8 @@ class _StartScreenState extends State<StartScreen> {
                                             screen: AlbumCollection(),
                                             withNavBar: true,
                                             pageTransitionAnimation:
-                                            PageTransitionAnimation
-                                                .cupertino,
+                                                PageTransitionAnimation
+                                                    .cupertino,
                                           );
                                         },
                                         child: Container(
@@ -1533,11 +1548,11 @@ class _StartScreenState extends State<StartScreen> {
                                           decoration: BoxDecoration(
                                             color: Colors.grey.shade900,
                                             borderRadius:
-                                            BorderRadius.circular(16.0),
+                                                BorderRadius.circular(16.0),
                                           ),
                                           child: ClipRRect(
                                             borderRadius:
-                                            BorderRadius.circular(10),
+                                                BorderRadius.circular(10),
                                             child: PhotoView(
                                               imageProvider: NetworkImage(
                                                   songDetails!['tUrl']
@@ -1545,7 +1560,7 @@ class _StartScreenState extends State<StartScreen> {
                                               customSize: Size(280, 280),
                                               enableRotation: true,
                                               backgroundDecoration:
-                                              BoxDecoration(
+                                                  BoxDecoration(
                                                 color: Theme.of(context)
                                                     .canvasColor,
                                               ),
@@ -1566,7 +1581,7 @@ class _StartScreenState extends State<StartScreen> {
                                                 fontWeight: FontWeight.w500,
                                                 color: Colors.white,
                                                 overflow:
-                                                TextOverflow.ellipsis),
+                                                    TextOverflow.ellipsis),
                                           ),
                                         ),
                                       ),
@@ -1580,7 +1595,7 @@ class _StartScreenState extends State<StartScreen> {
                                                 fontSize: 12,
                                                 color: Colors.grey,
                                                 overflow:
-                                                TextOverflow.ellipsis),
+                                                    TextOverflow.ellipsis),
                                           ),
                                         ),
                                       ),
@@ -1827,8 +1842,12 @@ class _StartScreenState extends State<StartScreen> {
           'songAuthor': songAuthor,
           'tUrl': tUrl,
           'vId': vId,
+          'thumbnail': ""
         });
       }
+
+      print("returning good playlist");
+      print(playlistDetails);
 
       return playlistDetails;
     } else {

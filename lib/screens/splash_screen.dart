@@ -56,10 +56,10 @@ class _SplashScreenState extends State<SplashScreen> {
     makePlaylist('Top10Indian');
     makePlaylist('EngRom');
 
-    setRecomendations('Top10Indian', 58, 'PLFFyMei_d85U1Rm4g12FgpLw484_LP1Jy');
-    setRecomendations('Trending', 200, 'PLMC9KNkIncKseYxDN2niH6glGRWKsLtde');
-    setRecomendations('Punjabi', 166, 'PLFFyMei_d85XIZGAtpgX6SKyEqOmyGlSq');
-    setRecomendations('EngRom', 189, 'PLgzTt0k8mXzE6H9DDgiY7Pd8pKZteis48');
+    setRecomendations('Top10Indian', 57, 'PLFFyMei_d85U1Rm4g12FgpLw484_LP1Jy');
+    setRecomendations('Trending', 199, 'PLMC9KNkIncKseYxDN2niH6glGRWKsLtde');
+    setRecomendations('Punjabi', 165, 'PLFFyMei_d85XIZGAtpgX6SKyEqOmyGlSq');
+    setRecomendations('EngRom', 188, 'PLgzTt0k8mXzE6H9DDgiY7Pd8pKZteis48');
     readLastSong();
 
     Future.delayed(
@@ -86,9 +86,10 @@ class _SplashScreenState extends State<SplashScreen> {
     var playlistProvider =
     Provider.of<PlaylistProvider>(context, listen: false);
     final nav = Provider.of<Playlists>(context, listen: false);
-    final box = await Hive.openBox(playlistName);
+    final box = await Hive.openBox('playlists');
 
-    List<dynamic> storedPlaylists = box.get(playlistName, defaultValue: []);
+
+    List<dynamic> storedPlaylists = box.get('playlists', defaultValue: []);
 
     // Find the playlist
     var mySongsPlaylist = storedPlaylists.firstWhere(
@@ -96,40 +97,33 @@ class _SplashScreenState extends State<SplashScreen> {
       orElse: () => {
         'name': playlistName,
         'songs': [],
-        'about': '',
+        'about' : ''
       },
     );
 
-    if (!nav.playlist.contains(playlistName)) {
-      setState(() {
+    setState(() {
+
+      if (!nav.playlist.contains(playlistName)) {
         nav.playlist.add(playlistName);
         playlistProvider.updatePlaylist(nav.playlist);
-      });
-    }
+      }
+    });
 
     mySongsPlaylist['about'] = about;
 
-
     List<dynamic> songs = mySongsPlaylist['songs'];
 
-    for (int i = 0; i < min(NumOfItems, 4); i++) {
+    for(int i=0;i<NumOfItems;i++){
       var song = playlistVideos[i];
-      mySongsPlaylist['ab${i + 1}'] = 'https://img.youtube.com/vi/${song.id}/hqdefault.jpg';
-      print(song.time.toString());
       songs.add({
         'songTitle': song.title.toString(),
         'songAuthor': song.author.toString(),
         'tUrl': "https://img.youtube.com/vi/${song.id}/hqdefault.jpg",
         'vId': song.id.toString(),
         'thumbnail': "",
-        'date' : song.date.toString()
-
-        //'ab${i + 1}': "https://img.youtube.com/vi/${song.id}/hqdefault.jpg"
       });
     }
-
-
-    box.put(playlistName, storedPlaylists); // Put the updated playlist into the Hive box
+    box.put('playlists', storedPlaylists);
   }
 
   getPlaylists() async {
