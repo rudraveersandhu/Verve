@@ -999,7 +999,7 @@ class _StartScreenState extends State<StartScreen> {
                               itemCount: playlistDetails?.length,
                               itemBuilder: (context, index) {
                                 Map<String, Object>? songDetails =
-                                    playlistDetails?[index];
+                                playlistDetails?[index];
 
                                 return Padding(
                                   padding: EdgeInsets.only(right: 0, left: 11),
