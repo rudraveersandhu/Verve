@@ -28,10 +28,9 @@ class PlayAudio with ChangeNotifier {
   final AudioPlayer audioPlayer = AudioPlayer();
 
   PlayAudio() {
-    // Add a listener to observe state changes
+
     audioPlayer.playerStateStream.listen((playerState) {
       print('Player state changed: $playerState');
-      // You can print other relevant information here based on the state if needed
       print('Duration: ${getDuration()} seconds');
       print('Current Position: ${getCurrentPosition()} seconds');
 
@@ -40,6 +39,7 @@ class PlayAudio with ChangeNotifier {
           playerState.processingState == ProcessingState.completed) {
         print('Resetting player position to initial');
         audioPlayer.seek(Duration(seconds: 0));
+        playAudio();
       }
     });
   }

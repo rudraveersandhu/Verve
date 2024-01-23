@@ -56,10 +56,10 @@ class _SplashScreenState extends State<SplashScreen> {
     makePlaylist('Top10Indian');
     makePlaylist('EngRom');
 
-    setRecomendations('Top10Indian', 57, 'PLFFyMei_d85U1Rm4g12FgpLw484_LP1Jy');
-    setRecomendations('Trending', 199, 'PLMC9KNkIncKseYxDN2niH6glGRWKsLtde');
-    setRecomendations('Punjabi', 165, 'PLFFyMei_d85XIZGAtpgX6SKyEqOmyGlSq');
-    setRecomendations('EngRom', 188, 'PLgzTt0k8mXzE6H9DDgiY7Pd8pKZteis48');
+    setRecomendations('Top10Indian', 58, 'PLFFyMei_d85U1Rm4g12FgpLw484_LP1Jy');
+    setRecomendations('Trending', 200, 'PLMC9KNkIncKseYxDN2niH6glGRWKsLtde');
+    setRecomendations('Punjabi', 166, 'PLFFyMei_d85XIZGAtpgX6SKyEqOmyGlSq');
+    setRecomendations('EngRom', 189, 'PLgzTt0k8mXzE6H9DDgiY7Pd8pKZteis48');
     readLastSong();
 
     Future.delayed(
@@ -113,16 +113,20 @@ class _SplashScreenState extends State<SplashScreen> {
 
     List<dynamic> songs = mySongsPlaylist['songs'];
 
+
     for(int i=0;i<NumOfItems;i++){
       var song = playlistVideos[i];
+
       songs.add({
         'songTitle': song.title.toString(),
         'songAuthor': song.author.toString(),
         'tUrl': "https://img.youtube.com/vi/${song.id}/hqdefault.jpg",
         'vId': song.id.toString(),
         'thumbnail': "",
+        'date' : ""
       });
     }
+
     box.put('playlists', storedPlaylists);
   }
 
