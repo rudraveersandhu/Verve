@@ -32,9 +32,6 @@ class _AlbumCollectionState extends State<AlbumCollection> {
       _controller1.jumpTo(_controller2.offset);
       track1=true;
       print('GPT');
-
-
-
   }
 
   @override
@@ -57,13 +54,6 @@ class _AlbumCollectionState extends State<AlbumCollection> {
     _controller1.dispose();
     _controller2.dispose();
     super.dispose();
-  }
-
-  @override
-  void didChangeDependencies() {
-    // TODO: implement didChangeDependencies
-
-    super.didChangeDependencies();
   }
 
   @override
