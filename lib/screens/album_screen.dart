@@ -19,7 +19,7 @@
 // * Copyright (c) 2023-2024, Rudraveer Singh Sandhu
 // * Project Git: https://github.com/rudraveersandhu/Verve
 // *
-
+/*
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/adapters.dart';
@@ -172,6 +172,7 @@ class _AlbumScreenState extends State<AlbumScreen> {
                             audio.initializeAudioPlayer(audpath,'downloaded');
                             audio.playAudio();
 
+
                             setState(() {
 
                               model.isCardVisible = true;
@@ -293,4 +294,4 @@ class _AlbumScreenState extends State<AlbumScreen> {
       box.put('color', paletteGenerator.dominantColor!.color.toString());
     });
   }
-}
+}*/

@@ -53,7 +53,6 @@ class _SearchScreenState extends State<SearchScreen> {
   bool playButtonOn = true;
   String vId = '';
   String vUrl = '';
-  String audpath = "";
   TextEditingController _textEditingController = TextEditingController();
   late List<bool> isPlayingList ;
 
@@ -222,17 +221,17 @@ class _SearchScreenState extends State<SearchScreen> {
                                         onTap: () async { //Stream logic
                                           await _updateCardColor(tempUrl);
                                           vId = vid.id.toString();
-                                          audpath = await DownloadVideo().downloadVideo(vId, 'stream');
-                                          audio.initializeAudioPlayer(audpath,'stream');
+                                          List path_dur = await DownloadVideo().downloadVideo(vId, 'download');
+                                          audio.initializeAudioPlayer(path_dur[0],'download');
                                           audio.playAudio();
 
                                           currentTitle = _searchResults[index].title;
                                           currentAuthor = _searchResults[index].author;
-                                          updateRetain(currentTitle, currentAuthor, thumbnailUrl, audpath, tempUrl);
+                                          updateRetain(currentTitle, currentAuthor, thumbnailUrl, path_dur[0], tempUrl);
 
                                           if (!isPlayingList[index]) { // Start playing the song
                                             model.playButtonOn = true;
-                                            audio.initializeAudioPlayer(audpath,'stream');
+                                            audio.initializeAudioPlayer(path_dur[0],'download');
                                             audio.playAudio();
                                           } else {  // Pause the song
                                             audio.pauseAudio();
@@ -241,6 +240,7 @@ class _SearchScreenState extends State<SearchScreen> {
                                           }
 
                                           setState(() {
+                                            //ABmodel.currentDuration = path_dur[1];
                                             isPlayingList[index] = !isPlayingList[index]; // Toggle the play/pause state for the clicked item
 
                                             if (currentlyPlayingIndex != index) {
@@ -254,7 +254,7 @@ class _SearchScreenState extends State<SearchScreen> {
                                             model.tUrl = thumbnailUrl;
                                             model.currentTitle = currentTitle;
                                             model.currentAuthor = currentAuthor;
-                                            model.filePath = audpath;
+                                            model.filePath = path_dur[0];
                                             model.isCardVisible = true;
                                             //model.playButtonOn = isPlayingList[index];
                                           });
@@ -354,12 +354,12 @@ class _SearchScreenState extends State<SearchScreen> {
                                                           await _updateCardColor(tempUrl);
                                                           vId =
                                                               vid.id.toString();
-                                                          audpath = await DownloadVideo().downloadVideo(vId, 'download');
+                                                          List path_dur = await DownloadVideo().downloadVideo(vId, 'download');
                                                           currentTitle = _searchResults[index].title;
                                                           currentAuthor = _searchResults[index].author;
-                                                          updateRetain(currentTitle, currentAuthor, thumbnailUrl, audpath, tempUrl);
+                                                          updateRetain(currentTitle, currentAuthor, thumbnailUrl, path_dur[0], tempUrl);
 
-                                                          audio.initializeAudioPlayer(audpath,'downloaded');
+                                                          audio.initializeAudioPlayer(path_dur[0],'downloaded');
                                                           audio.playAudio();
 
                                                           setState(() {
@@ -372,7 +372,7 @@ class _SearchScreenState extends State<SearchScreen> {
                                                             model.currentAuthor =
                                                                 currentAuthor;
                                                             model.filePath =
-                                                                audpath;
+                                                            path_dur[0];
                                                             model.isCardVisible =
                                                                 true;
                                                             model.playButtonOn =
@@ -380,7 +380,7 @@ class _SearchScreenState extends State<SearchScreen> {
                                                           });
                                                         },
                                                         child: Icon(
-                                                          CupertinoIcons.down_arrow,
+                                                          CupertinoIcons.heart,
                                                           color: Colors.white,
                                                         ),
                                                       ),
@@ -390,13 +390,13 @@ class _SearchScreenState extends State<SearchScreen> {
                                                         onTap: () async { //Stream logic
                                                           await _updateCardColor(tempUrl);
                                                           vId = vid.id.toString();
-                                                          audpath = await DownloadVideo().downloadVideo(vId, 'stream');
-                                                          audio.initializeAudioPlayer(audpath,'stream');
+                                                          List path_dur = await DownloadVideo().downloadVideo(vId, 'download');
+                                                          audio.initializeAudioPlayer(path_dur[0],'download');
                                                           audio.playAudio();
 
                                                           currentTitle = _searchResults[index].title;
                                                           currentAuthor = _searchResults[index].author;
-                                                          updateRetain(currentTitle, currentAuthor, thumbnailUrl, audpath, tempUrl);
+                                                          updateRetain(currentTitle, currentAuthor, thumbnailUrl, path_dur[0], tempUrl);
 
                                                           if (!isPlayingList[index]) { // Start playing the song
                                                             model.playButtonOn = true;
@@ -421,7 +421,7 @@ class _SearchScreenState extends State<SearchScreen> {
                                                             model.tUrl = thumbnailUrl;
                                                             model.currentTitle = currentTitle;
                                                             model.currentAuthor = currentAuthor;
-                                                            model.filePath = audpath;
+                                                            model.filePath = path_dur[0];
                                                             model.isCardVisible = true;
                                                             //model.playButtonOn = isPlayingList[index];
                                                           });
@@ -502,12 +502,12 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   void updateRetain(String songTitle, String artist, String thumb,
-      String audPath, String tempUrl) async {
+      List path_dur, String tempUrl) async {
     final box = await Hive.openBox('retain');
     box.put('song', songTitle);
     box.put('author', artist);
     box.put('tUrl', thumb);
-    box.put('audPath', audpath);
+    box.put('audPath', path_dur[0]);
     box.put('tempUrl', tempUrl);
   }
 

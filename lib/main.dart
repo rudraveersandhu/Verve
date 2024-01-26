@@ -22,6 +22,7 @@
 
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:palette_generator/palette_generator.dart';
 import 'package:verve/models/album.dart';
 import 'package:verve/screens/splash_screen.dart';
 import 'package:verve/services/play_audio.dart';
@@ -47,7 +48,28 @@ Future<void> main() async {
           create: (context) => BottomPlayerModel(),
         ),
         ChangeNotifierProvider<PlayAudio>(
-          create: (context) => PlayAudio(),
+          create: (context) => PlayAudio(updateCard: (tUrl, mode , title , author , dur ) async {
+            print("${tUrl},${mode},${title},${author},${dur}");
+            if(mode == 'playlist'){
+              PaletteGenerator paletteGenerator = await PaletteGenerator.fromImageProvider(NetworkImage(tUrl));
+              final model = context.read<BottomPlayerModel>();
+              //final box = await Hive.openBox('retain');
+              print("automatic update successful _____________________________________________________________");
+
+                model.cardBackgroundColor = paletteGenerator.dominantColor!.color;
+                model.currentTitle = title;
+                model.currentAuthor = author;
+                model.tUrl = tUrl;
+                model.playButtonOn = true;
+                model.isCardVisible = true;
+                model.currentDuration = dur.toInt();
+
+                //box.put('color', paletteGenerator.dominantColor!.color.toString());
+
+            }
+
+          }
+          ),
         ),
         ChangeNotifierProvider<Playlists>(
           create: (context) => Playlists(),

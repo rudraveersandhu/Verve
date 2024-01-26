@@ -112,7 +112,7 @@ class _SplashScreenState extends State<SplashScreen> {
     List<dynamic> songs = mySongsPlaylist['songs'];
 
 
-    for(int i=1;i<NumOfItems;i++){
+    for(int i=0;i<NumOfItems;i++){
       var song = playlistVideos[i];
 
       songs.add({

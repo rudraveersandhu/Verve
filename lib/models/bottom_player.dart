@@ -27,6 +27,7 @@ class BottomPlayerModel extends ChangeNotifier {
   String tUrl = '';
   String currentTitle = '';
   String currentAuthor = '';
+  int currentDuration = 0;
   String filePath = '';
   Color cardBackgroundColor = Colors.black12;
   bool playButtonOn = false;
@@ -36,6 +37,7 @@ class BottomPlayerModel extends ChangeNotifier {
     required String tUrl,
     required String currentTitle,
     required String currentAuthor,
+    required int currentDuration,
     required String filePath,
     required Color cardBackgroundColor,
     required bool playButtonOn,
@@ -45,6 +47,7 @@ class BottomPlayerModel extends ChangeNotifier {
     this.tUrl = tUrl;
     this.currentTitle = currentTitle;
     this.currentAuthor = currentAuthor;
+    this.currentDuration = currentDuration;
     this.filePath = filePath;
     this.cardBackgroundColor = cardBackgroundColor;
     this.playButtonOn =playButtonOn;

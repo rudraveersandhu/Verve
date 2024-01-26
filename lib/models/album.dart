@@ -32,6 +32,7 @@ class AlbumModel extends ChangeNotifier {
   Color cardBackgroundColor = Colors.grey;
   bool playButtonOn = false;
   String playlistName = "";
+  int currentDuration = 0;
   String albumName = "";
   String ab1 = '';
   String ab2 = '';
@@ -54,6 +55,7 @@ class AlbumModel extends ChangeNotifier {
     required String ab4,
     required String playlistName,
     required String albumName,
+    required int currentDuration,
 
   }) {
     this.about = about;
@@ -61,15 +63,16 @@ class AlbumModel extends ChangeNotifier {
     this.tUrl = tUrl;
     this.currentTitle = currentTitle;
     this.currentAuthor = currentAuthor;
+    this.currentDuration = currentDuration;
     this.filePath = filePath;
     this.cardBackgroundColor = cardBackgroundColor;
     this.playButtonOn =playButtonOn;
-    this.playlistName;
-    this.albumName;
-    this.ab1;
-    this.ab2;
-    this.ab3;
-    this.ab4;
+    this.playlistName = playlistName;
+    this.albumName = albumName;
+    this.ab1 = ab1;
+    this.ab2 = ab2;
+    this.ab3 = ab3;
+    this.ab4 = ab4;
     notifyListeners();
   }
 }

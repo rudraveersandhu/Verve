@@ -24,8 +24,10 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/adapters.dart';
+import 'package:just_audio/just_audio.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:provider/provider.dart';
+import 'package:verve/models/album.dart';
 import '../models/playlists.dart';
 import '../models/bottom_player.dart';
 import '../services/play_audio.dart';
@@ -44,24 +46,29 @@ class _PlayerState extends State<Player> {
   Duration position = Duration.zero;
   bool isPlaylistSelectorVisible = false;
 
+  String formatSecondsToTime(int seconds) {
+    int hours = seconds ~/ 3600;
+    int remainingMinutes = (seconds % 3600) ~/ 60;
+    int remainingSeconds = seconds % 60;
+
+    String formattedTime =
+        '$hours:${remainingMinutes.toString().padLeft(2, '0')}:${remainingSeconds.toString().padLeft(2, '0')}';
+    return formattedTime;
+  }
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     final audio = Provider.of<PlayAudio>(context);
     audio.audioPlayer.positionStream.listen((positionValue) {
+      audio.audioPlayer.playerStateStream.listen((playerState) {
       if (mounted) {
         setState(() {
           position = positionValue;
         });
+      } else{
       }
-    });
-
-    audio.audioPlayer.durationStream.listen((event) {
-      if (mounted) {
-        setState(() {
-          duration = event!;
-        });
-      }
+      });
     });
   }
 
@@ -69,6 +76,7 @@ class _PlayerState extends State<Player> {
   Widget build(BuildContext context) {
     final model = context.watch<BottomPlayerModel>();
     final audio = Provider.of<PlayAudio>(context);
+
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
@@ -244,13 +252,17 @@ class _PlayerState extends State<Player> {
                 thumbColor: Colors.transparent,
                 activeColor: model.cardBackgroundColor.withAlpha(150),
                 secondaryActiveColor: Colors.amber,
-                value: position.inSeconds.toDouble(),
-                min: 0.0,
-                max: duration.inSeconds.toDouble(),
+                value:position.inSeconds.toDouble() <= model.currentDuration.toDouble() ? position.inSeconds.toDouble() : 0,
+                min: 0,
+                max: model.currentDuration.toDouble(),
                 onChanged: (value) async {
-                  final position = Duration(seconds: value.toInt());
-                  await audio.audioPlayer.seek(position);
+                  if(value < model.currentDuration.toDouble()){
+                    //print(duration.inSeconds.toDouble());
+                    final position = Duration(seconds: value.toInt());
+                    await audio.audioPlayer.seek(position);
+                  }
                 },
+
               ),
               Padding(
                 padding: const EdgeInsets.only(
@@ -266,7 +278,7 @@ class _PlayerState extends State<Player> {
                           color: Colors.grey, fontWeight: FontWeight.w500),
                     ),
                     Text(
-                      getTime(duration.toString(), 7),
+                      "${formatSecondsToTime(model.currentDuration)}",
                       style: TextStyle(
                           color: Colors.grey, fontWeight: FontWeight.w500),
                     ),
@@ -279,10 +291,15 @@ class _PlayerState extends State<Player> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(
-                    Icons.skip_previous_rounded,
-                    color: Colors.white.withOpacity(0.4),
-                    size: 60,
+                  GestureDetector(
+                    onTap: (){
+
+                    },
+                    child: Icon(
+                      Icons.skip_previous_rounded,
+                      color: Colors.white.withOpacity(0.4),
+                      size: 60,
+                    ),
                   ),
                   model.playButtonOn
                       ? GestureDetector(
@@ -310,10 +327,15 @@ class _PlayerState extends State<Player> {
                             size: 80,
                           ),
                         ),
-                  Icon(
-                    Icons.skip_next_rounded,
-                    color: Colors.white.withOpacity(0.4),
-                    size: 60,
+                  GestureDetector(
+                    onTap: (){
+
+                    },
+                    child: Icon(
+                      Icons.skip_next_rounded,
+                      color: Colors.white.withOpacity(0.4),
+                      size: 60,
+                    ),
                   ),
                 ],
               ),

@@ -24,25 +24,65 @@
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
-import 'package:hive_flutter/adapters.dart';
 import 'package:just_audio/just_audio.dart';
 
-class PlayAudio with ChangeNotifier {
-  final AudioPlayer audioPlayer = AudioPlayer();
+import 'download_video.dart';
 
-  PlayAudio() {
+class PlayAudio with ChangeNotifier {
+
+  final Function(String , String , String , String , int ) updateCard;
+
+  final AudioPlayer audioPlayer = AudioPlayer();
+  String tracker = '';
+  int strack = 0;
+  String playlistName = '' ;
+  late int dur;
+  late var playlist ;
+
+
+
+
+  PlayAudio({required this.updateCard}) {
     audioPlayer.playerStateStream.listen((playerState) {
-      print('Player state changed: $playerState');
-      print('Duration: ${getDuration()} seconds');
+      //print('Player state changed: $playerState');
+      //print('Duration: ${getDuration()} seconds');
       print('Current Position: ${getCurrentPosition()} seconds');
+      print("Tracker: $tracker");
+      print("Index: $strack");
       // Check for the condition to reset position
-      if (playerState.playing &&
-          playerState.processingState == ProcessingState.completed) {
-        print('Resetting player position to initial');
-        audioPlayer.seek(Duration(seconds: 0));
-        playAudio();
+      if (tracker == 'single' &&  playerState.playing && playerState.processingState == ProcessingState.completed ) {
+          print('Resetting player position to initial');
+          audioPlayer.seek(Duration(seconds: 0));
+          playAudio();
+      }
+      if (playerState.playing && playerState.processingState == ProcessingState.completed && tracker == 'playlist' ){
+        print("hogaya khatam bsdk");
+        stopAudio();
+        //audioPlayer.seek(Duration(seconds: 0));
+        loadNextFromPlaylist(strack+1, playlist);
+
+        //initializePlaylistAudioPlayer(playlist, strack+1,[]);
       }
     });
+  }
+
+  Future<void> loadNextFromPlaylist(int index,playlistDetails) async {
+    List path_dur = await DownloadVideo().downloadVideo(playlist[index]['vId'].toString(),'download');  // Download the audio file, return a list with file location and duration
+
+    await updateCard(playlist[index]['tUrl'].toString(),
+        'playlist',
+        playlist[index]['songTitle'].toString(),
+        playlist[index]['songAuthor'].toString(),
+        path_dur[1].toInt());
+    notifyListeners();
+
+    initializePlaylistAudioPlayer(playlistDetails,index,path_dur);
+    playAudio();
+    //Future<List<Map<String,Object>>> playlist = accessPlaylist(playlistName);
+  }
+
+  Future<int> getDuration() async {
+    return audioPlayer.duration?.inSeconds ?? 0;
   }
 
   Future<void> initializeAudioPlayer(String filePath, String mode) async {
@@ -57,16 +97,25 @@ class PlayAudio with ChangeNotifier {
     }
   }
 
-  int getDuration() {
-    return audioPlayer.duration?.inSeconds ?? 0;
+  Future<void> initializePlaylistAudioPlayer(rplaylist, int index, List path_dur) async {
+    tracker = 'playlist';
+    playlist = rplaylist;
+    strack = index;
+    //print(index);
+    //print(rplaylist[index]['songTitle']);
+    String audpath = path_dur[0];
+    //print(audpath);
+    await audioPlayer.setFilePath(audpath);
+    notifyListeners();
   }
 
   int getCurrentPosition() {
     return audioPlayer.position.inSeconds;
+
   }
 
   Future<void> playAudio() async {
-    //getDuration();
+    getDuration();
     await audioPlayer.play();
     notifyListeners();
   }
@@ -86,45 +135,4 @@ class PlayAudio with ChangeNotifier {
     audioPlayer.dispose();
     super.dispose();
   }
-
-  Future<List<Map<String, Object>>> accessPlaylist(
-      String targetPlaylistName) async {
-    final box = await Hive.openBox('playlists');
-
-    List<dynamic> storedPlaylists = box.get('playlists', defaultValue: []);
-
-    var targetPlaylist = storedPlaylists.firstWhere(
-          (playlist) => playlist['name'] == targetPlaylistName,
-      orElse: () => <String, Object>{},
-    );
-
-    box.put('about', targetPlaylist['about']);
-
-    if (targetPlaylist != null) {
-      List<dynamic> songs = targetPlaylist['songs'];
-      List<Map<String, Object>> playlistDetails = [];
-
-      for (var song in songs) {
-        String songTitle = song['songTitle'].toString();
-        String songAuthor = song['songAuthor'].toString();
-        String tUrl = song['tUrl'].toString();
-        String vId = song['vId'].toString();
-
-        playlistDetails.add({
-          'songTitle': songTitle,
-          'songAuthor': songAuthor,
-          'tUrl': tUrl,
-          'vId': vId,
-          'thumbnail': ""
-        });
-      }
-
-      return playlistDetails;
-    } else {
-      print('Playlist not found: $targetPlaylistName');
-      return [];
-    }
-  }
 }
-
-

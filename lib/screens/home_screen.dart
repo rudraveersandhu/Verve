@@ -24,6 +24,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:marquee/marquee.dart';
+import 'package:palette_generator/palette_generator.dart';
 import 'package:persistent_bottom_nav_bar/persistent_tab_view.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:verve/screens/player.dart';
@@ -42,8 +43,16 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with ChangeNotifier{
   PersistentTabController _controller = PersistentTabController(initialIndex: 0);
+  Duration position = Duration.zero;
+
+
+  @override
+  void initState() {
+    super.initState();
+
+  }
 
   @override
   void dispose() {
@@ -51,10 +60,13 @@ class _HomeScreenState extends State<HomeScreen> {
     super.dispose();
   }
 
+
+
   @override
   Widget build(BuildContext context) {
     final model = context.read<BottomPlayerModel>();
     final audio = Provider.of<PlayAudio>(context);
+
     return Stack(
       children: [
         PersistentTabView(
@@ -138,7 +150,9 @@ class _HomeScreenState extends State<HomeScreen> {
                               children: [
                                 Padding(
                                   padding: const EdgeInsets.all(6.0),
-                                  child: ListTile(
+                                  child: Consumer<BottomPlayerModel>(
+                                  builder: (BuildContext context, BottomPlayerModel value, Widget? child) {
+                                    return ListTile(
                                     tileColor: model.cardBackgroundColor,
                                     contentPadding: EdgeInsets.zero,
                                     title: Row(
@@ -165,7 +179,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                                       text: model.currentTitle,
                                                       style: TextStyle(
                                                         fontSize: 14.0,
-                                                        color: Colors.black,
+                                                        color: Colors.white,
                                                       ),
                                                       scrollAxis: Axis.horizontal,
                                                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -225,8 +239,10 @@ class _HomeScreenState extends State<HomeScreen> {
                                         ),
                                       ),
                                     ),
+                                  ); },
                                   ),
                                 ),
+
                                 Positioned(
                                   top: 7,
                                   bottom: 7,
@@ -261,6 +277,30 @@ class _HomeScreenState extends State<HomeScreen> {
                                     ),
                                   ),
                                 ),
+
+                                Positioned(
+                                  top: 67,
+                                  bottom: MediaQuery.of(context).padding.bottom,
+                                  left:  0,
+                                  right: 0,
+                                  child: Slider(
+                                    thumbColor: Colors.transparent,
+                                    activeColor: model.cardBackgroundColor.withAlpha(150),
+                                    secondaryActiveColor: Colors.amber,
+                                    value:position.inSeconds.toDouble() <= model.currentDuration.toDouble() ? position.inSeconds.toDouble() : 0,
+                                    min: 0,
+                                    max: model.currentDuration.toDouble(),
+                                    onChanged: (value) async {
+                                      if(value < model.currentDuration.toDouble()){
+                                        //print(duration.inSeconds.toDouble());
+                                        final position = Duration(seconds: value.toInt());
+                                        await audio.audioPlayer.seek(position);
+
+                                      }
+                                    },
+
+                                  ),
+                                ),
                               ],
                             ),
                           ),
@@ -282,6 +322,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
 
   List<Widget> _buildScreens() {
+
+
     return [
       StartScreen(),
       SearchScreen(),

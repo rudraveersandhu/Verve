@@ -1007,34 +1007,26 @@ class _StartScreenState extends State<StartScreen> {
                                     children: [
                                       GestureDetector(
                                         onTap: () async {
-                                          await _updateAlbumBgColor(
-                                              songDetails['tUrl'].toString());
-                                          setState(() {
-                                            ABmodel.ab1 =
-                                                'https://img.youtube.com/vi/${playlistDetails?[getRandomNumber(0, playlistDetails.length)]['vId']}/hqdefault.jpg';
-                                            ABmodel.ab2 =
-                                                'https://img.youtube.com/vi/${playlistDetails?[4]['vId']}/hqdefault.jpg';
-                                            ABmodel.ab3 =
-                                                'https://img.youtube.com/vi/${playlistDetails?[6]['vId']}/hqdefault.jpg';
-                                            ABmodel.ab4 =
-                                                'https://img.youtube.com/vi/${playlistDetails?[8]['vId']}/hqdefault.jpg';
-                                            ABmodel.playlistName =
-                                                'Top10Indian';
-                                            ABmodel.albumName =
-                                                "India's Top Trending";
 
-                                            ABmodel.tUrl =
-                                                songDetails['tUrl'].toString();
-                                            ABmodel.currentTitle =
-                                                songDetails['songTitle']
-                                                    .toString();
-                                            ABmodel.currentAuthor =
-                                                songDetails['songAuthor']
-                                                    .toString();
-                                            ABmodel.vId =
-                                                songDetails['vId'].toString();
-                                            ABmodel.about =
-                                                songDetails['about'].toString();
+                                          await _updateAlbumBgColor('https://img.youtube.com/vi/${songDetails['vId'].toString()}/sddefault.jpg');
+
+                                          setState(() {
+
+                                            ABmodel.ab1 = 'https://img.youtube.com/vi/${playlistDetails?[getRandomNumber(0, playlistDetails.length)]['vId']}/sddefault.jpg';
+                                            ABmodel.ab2 = 'https://img.youtube.com/vi/${playlistDetails?[getRandomNumber(0, playlistDetails.length)]['vId']}/sddefault.jpg';
+                                            ABmodel.ab3 = 'https://img.youtube.com/vi/${playlistDetails?[getRandomNumber(0, playlistDetails.length)]['vId']}/sddefault.jpg';
+                                            ABmodel.ab4 = 'https://img.youtube.com/vi/${playlistDetails?[getRandomNumber(0, playlistDetails.length)]['vId']}/sddefault.jpg';
+
+                                            ABmodel.playlistName = 'Top10Indian';
+                                            ABmodel.albumName = "India's Top Trending";
+
+                                            ABmodel.currentTitle = songDetails['songTitle'].toString();
+                                            ABmodel.currentAuthor = songDetails['songAuthor'].toString();
+
+                                            ABmodel.vId = songDetails['vId'].toString();
+                                            ABmodel.about = songDetails['about'].toString();
+                                            ABmodel.tUrl = songDetails['tUrl'].toString();
+
                                           });
 
                                           updateRetain(
@@ -1185,11 +1177,11 @@ class _StartScreenState extends State<StartScreen> {
                                             ABmodel.ab1 =
                                                 'https://img.youtube.com/vi/${playlistDetails![getRandomNumber(0, playlistDetails.length)]['vId']}/hqdefault.jpg';
                                             ABmodel.ab2 =
-                                                'https://img.youtube.com/vi/${playlistDetails![4]['vId']}/hqdefault.jpg';
+                                                'https://img.youtube.com/vi/${playlistDetails[4]['vId']}/hqdefault.jpg';
                                             ABmodel.ab3 =
-                                                'https://img.youtube.com/vi/${playlistDetails![6]['vId']}/hqdefault.jpg';
+                                                'https://img.youtube.com/vi/${playlistDetails[6]['vId']}/hqdefault.jpg';
                                             ABmodel.ab4 =
-                                                'https://img.youtube.com/vi/${playlistDetails![8]['vId']}/hqdefault.jpg';
+                                                'https://img.youtube.com/vi/${playlistDetails[8]['vId']}/hqdefault.jpg';
                                             ABmodel.playlistName = 'Punjabi';
                                             ABmodel.albumName =
                                                 "Latest Punjabi releases";
@@ -1723,9 +1715,9 @@ class _StartScreenState extends State<StartScreen> {
   }
 
   Future<void> _updateAlbumBgColor(String thumbnailUrl) async {
-    PaletteGenerator paletteGenerator =
-        await PaletteGenerator.fromImageProvider(NetworkImage(thumbnailUrl));
     final ABmodel = context.read<AlbumModel>();
+    PaletteGenerator paletteGenerator = await PaletteGenerator.fromImageProvider(NetworkImage(thumbnailUrl));
+
     setState(() {
       ABmodel.cardBackgroundColor = paletteGenerator.dominantColor!.color;
     });

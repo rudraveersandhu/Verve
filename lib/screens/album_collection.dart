@@ -22,16 +22,11 @@ class _AlbumCollectionState extends State<AlbumCollection> {
   bool track1 = false;
 
   void _onScrollEvent() {
-    final extentAfter = _controller1.position.extentAfter;
-    final extentAfter2 = _controller2.position.extentAfter;
-    print("--------------------------------------------");
-    print("Extent after: $extentAfter2");
-    print("Extent after: $extentAfter");
-    print("--------------------------------------------");
-
+    //final extentAfter = _controller1.position.extentAfter;
+    //final extentAfter2 = _controller2.position.extentAfter;
     _controller1.jumpTo(_controller2.offset);
     track1 = true;
-    print('GPT');
+
   }
 
   @override
@@ -58,7 +53,7 @@ class _AlbumCollectionState extends State<AlbumCollection> {
 
   @override
   Widget build(BuildContext context) {
-    final ABmodel = context.watch<AlbumModel>();
+    final ABmodel = Provider.of<AlbumModel>(context, listen: false);
     return Container(
       height: MediaQuery.of(context).size.height,
       decoration: BoxDecoration(
@@ -66,7 +61,7 @@ class _AlbumCollectionState extends State<AlbumCollection> {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              ABmodel.cardBackgroundColor.withAlpha(100),
+              ABmodel.cardBackgroundColor,
               Colors.black.withOpacity(.96)
             ],
             stops: [
@@ -86,7 +81,7 @@ class _AlbumCollectionState extends State<AlbumCollection> {
                 return <Widget>[
                   SliverAppBar(
                     expandedHeight: 260,
-                    backgroundColor: ABmodel.cardBackgroundColor.withAlpha(500),
+                    backgroundColor: ABmodel.cardBackgroundColor,
                     elevation: 0,
                     pinned: true,
                     toolbarHeight: 40,
@@ -288,7 +283,7 @@ class _AlbumCollectionState extends State<AlbumCollection> {
                                           left: 0, top: 10),
                                       child: Text(
                                         ABmodel.albumName,
-                                        maxLines: 3,
+                                        maxLines: 2,
                                         style: TextStyle(
                                             color: Colors.white,
                                             fontSize: 18,
@@ -337,34 +332,29 @@ class _AlbumCollectionState extends State<AlbumCollection> {
 
                                   return GestureDetector(
                                     onTap: () async {
+                                      final audio = Provider.of<PlayAudio>(context, listen: false);
                                       final model = context.read<BottomPlayerModel>();
-                                      final audio = Provider.of<PlayAudio>(
-                                          context,
-                                          listen: false);
-                                      String audpath = await DownloadVideo().downloadVideo(songDetails['vId'].toString(),'download');
-                                      await _updateCardColor(
-                                          songDetails['tUrl'].toString());
+
+                                      List path_dur = await DownloadVideo().downloadVideo(songDetails['vId'].toString(),'download');  // Download the audio file, return a list with file location and duration
+
+                                      await _updateCard(
+                                          songDetails['tUrl'].toString(),
+                                          'playlist',
+                                          songDetails['songTitle'].toString(),
+                                          songDetails['songAuthor'].toString(),
+                                          path_dur[1].toInt());
                                       updateRetain(
                                           songDetails['songTitle'].toString(),
                                           songDetails['songAuthor'].toString(),
                                           songDetails['tUrl'].toString(),
-                                          audpath,
+                                          path_dur[0],
                                           songDetails['tUrl'].toString());
+                                      await audio.initializePlaylistAudioPlayer(playlistDetails,index,path_dur);
+                                      await audio.playAudio();
 
-                                      audio.initializeAudioPlayer(audpath,'downloaded');
-                                      audio.playAudio();
-                                      setState(() {
-                                        model.isCardVisible = true;
-                                        model.tUrl =
-                                            songDetails['tUrl'].toString();
-                                        model.currentTitle =
-                                            songDetails['songTitle'].toString();
-                                        model.currentAuthor =
-                                            songDetails['songAuthor']
-                                                .toString();
-                                        model.filePath = audpath;
-                                        model.isCardVisible = true;
-                                        model.playButtonOn = true;
+                                      setState(()  {
+                                        //ABmodel.currentDuration = (path_dur[1]).toInt();
+                                        model.filePath = path_dur[0];
                                       });
                                     },
                                     child: Container(
@@ -483,6 +473,16 @@ class _AlbumCollectionState extends State<AlbumCollection> {
     );
   }
 
+  getDuration() async {
+    var box = await Hive.openBox('duration');
+    final ABmodel = Provider.of<AlbumModel>(context);
+
+    setState(() {
+      ABmodel.currentDuration = box.get('duration');
+    });
+
+  }
+
   Future<List<Map<String, Object>>> accessPlaylist(
       String targetPlaylistName) async {
     final box = await Hive.openBox('playlists');
@@ -537,15 +537,33 @@ class _AlbumCollectionState extends State<AlbumCollection> {
     box.put('tempUrl', tempUrl);
   }
 
-  Future<void> _updateCardColor(String thumbnailUrl) async {
-    PaletteGenerator paletteGenerator =
-        await PaletteGenerator.fromImageProvider(NetworkImage(thumbnailUrl));
-    final model = context.read<BottomPlayerModel>();
-    final box = await Hive.openBox('retain');
-
-    setState(() {
-      model.cardBackgroundColor = paletteGenerator.dominantColor!.color;
-      box.put('color', paletteGenerator.dominantColor!.color.toString());
-    });
+  Future<void> _updateCard(String thumbnailUrl, String mode, String title, String author, int dur) async {
+    if(mode == 'playlist'){
+      PaletteGenerator paletteGenerator = await PaletteGenerator.fromImageProvider(NetworkImage(thumbnailUrl));
+      final model = context.read<BottomPlayerModel>();
+      //final box = await Hive.openBox('retain');
+      print("automatic update sucessfull _____________________________________________________________");
+      setState(() {
+        model.cardBackgroundColor = paletteGenerator.dominantColor!.color;
+        model.currentTitle = title;
+        model.currentAuthor = author;
+        model.tUrl = thumbnailUrl;
+        model.playButtonOn = true;
+        model.isCardVisible = true;
+        model.currentDuration = dur.toInt();
+        //box.put('color', paletteGenerator.dominantColor!.color.toString());
+      });
+    }
   }
 }
+
+/*if (mode == ""){
+      PaletteGenerator paletteGenerator = await PaletteGenerator.fromImageProvider(NetworkImage(thumbnailUrl));
+      final model = context.read<BottomPlayerModel>();
+      final box = await Hive.openBox('retain');
+      setState(() {
+        model.cardBackgroundColor = paletteGenerator.dominantColor!.color;
+        box.put('color', paletteGenerator.dominantColor!.color.toString());
+      });
+
+  } else */

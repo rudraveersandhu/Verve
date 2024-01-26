@@ -23,8 +23,13 @@
 
 import 'dart:io';
 import 'dart:typed_data';
+import 'package:ffmpeg_kit_flutter/ffprobe_kit.dart';
+
 import 'package:path_provider/path_provider.dart';
+
 import 'package:youtube_explode_dart/youtube_explode_dart.dart';
+
+import '../models/album.dart';
 
 class DownloadVideo {
 
@@ -33,15 +38,16 @@ class DownloadVideo {
     return file.existsSync();
   }
 
-  Future<String> downloadVideo(String videoId, String mode) async {
+  Future<List> downloadVideo(String videoId, String mode) async {
     final appDocDir = await getApplicationDocumentsDirectory();
     final filePath = '${appDocDir.path}/$videoId.mp3';
+    var youtube = YoutubeExplode();
 
-    if(fileExists(filePath)){
-      return filePath;
-
-    } else if (!fileExists(filePath)){
-      var youtube = YoutubeExplode();
+    try {if(fileExists(filePath)){
+      double dur = await getFileDuration(filePath);
+      return [filePath,dur];
+    } else if (!fileExists(filePath))
+    {
       var streamManifest = await youtube.videos.streamsClient.getManifest(videoId); // Get the stream manifest for the video
       var audioOnlyStreams = streamManifest.audioOnly; // Get the audio-only streams from the manifest
       var audioStream = audioOnlyStreams.where((stream) => stream.audioCodec == 'mp4a.40.2').withHighestBitrate(); // Get the highest quality audio-only stream
@@ -49,20 +55,35 @@ class DownloadVideo {
       if (mode == "download"){  //download logic
         var audioStreamBytes = await youtube.videos.streamsClient.get(audioStream).toList(); // Get the audio stream as bytes
         await File(filePath).writeAsBytes(Uint8List.fromList(audioStreamBytes.expand((e) => e).toList()));// Save the audio stream to a file
-        return filePath;
+        double duration =  await getFileDuration(filePath);
+        List path_dur = [filePath,duration];
+        return path_dur;
 
-      } else if (mode == "stream") {  //streaming logic
-
-          return audioStream.url.toString();
       } else {
-        return "Invalid mode used, check the mode for the download function.";
+        youtube.close();
+        return [0,0];
       }
-      youtube.close();
-
     }else{
+      print("error");
+      return [0,0];
+    }} catch (e, stackTrace) {
+      print("Error: $e");
+      print("StackTrace: $stackTrace");
 
-      return "error";
-
+      print("An error occurred while processing the request.");
+      return [0,0];
+    }finally {
+      youtube.close();
     }
   }
+
+  Future<double> getFileDuration(String mediaPath) async {
+    final mediaInfoSession = await FFprobeKit.getMediaInformation(mediaPath);
+    final mediaInfo = mediaInfoSession.getMediaInformation()!;
+    // the given duration is in fractional seconds
+    final duration = double.parse(mediaInfo.getDuration()!);
+    //print('Duration: $duration');
+    return duration;
+  }
+
 }
