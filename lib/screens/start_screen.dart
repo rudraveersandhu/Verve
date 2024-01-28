@@ -34,6 +34,7 @@ import 'package:verve/screens/my_songs.dart';
 import 'package:verve/utilities/playlist_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:youtube_explode_dart/youtube_explode_dart.dart';
+import '../models/bottom_player.dart';
 import '../models/playlists.dart';
 import 'new_playlist.dart';
 import 'dart:async';
@@ -59,15 +60,19 @@ class _StartScreenState extends State<StartScreen> {
 
   getName() async {
     final box = await Hive.openBox('User');
+    var x = box.get('name').toString();
     setState(() {
-      name = box.get('name').toString();
+      name = x;
     });
   }
 
   setName(String name) async {
+    final model = context.read<BottomPlayerModel>();
     final box = await Hive.openBox('User');
     box.put('name', name);
-    getName();
+    setState(() {
+      model.user = name;
+    });
   }
 
   void updateRetain(String songTitle, String artist, String thumb,
@@ -89,7 +94,6 @@ class _StartScreenState extends State<StartScreen> {
 
   @override
   void initState() {
-    getName();
     fetchData();
     super.initState();
   }
@@ -105,8 +109,8 @@ class _StartScreenState extends State<StartScreen> {
   Widget build(BuildContext context) {
     final nav = context.watch<Playlists>();
     final ABmodel = context.read<AlbumModel>();
-    var playlistProvider =
-        Provider.of<PlaylistProvider>(context, listen: false);
+    final model = context.read<BottomPlayerModel>();
+    var playlistProvider = Provider.of<PlaylistProvider>(context, listen: false);
     double screenWidth = MediaQuery.of(context).size.width;
     double containerWidth = screenWidth * 0.443;
     double containerHeight = containerWidth / 3.9;
@@ -176,7 +180,7 @@ class _StartScreenState extends State<StartScreen> {
                                         Row(
                                           children: [
                                             Text(
-                                              name,
+                                              model.user,
                                               style: TextStyle(
                                                 color: Colors.white,
                                                 fontSize: 25,
@@ -188,9 +192,7 @@ class _StartScreenState extends State<StartScreen> {
                                                   top: 5.0, left: 5),
                                               child: GestureDetector(
                                                   onTap: () {
-                                                    _showEditDialog(name == ""
-                                                        ? "Guest"
-                                                        : name);
+                                                    _showEditDialog(model.user);
                                                   },
                                                   child: Icon(
                                                     Icons.edit,
@@ -1012,12 +1014,15 @@ class _StartScreenState extends State<StartScreen> {
 
                                           setState(() {
 
+
                                             ABmodel.ab1 = 'https://img.youtube.com/vi/${playlistDetails?[getRandomNumber(0, playlistDetails.length)]['vId']}/sddefault.jpg';
                                             ABmodel.ab2 = 'https://img.youtube.com/vi/${playlistDetails?[getRandomNumber(0, playlistDetails.length)]['vId']}/sddefault.jpg';
                                             ABmodel.ab3 = 'https://img.youtube.com/vi/${playlistDetails?[getRandomNumber(0, playlistDetails.length)]['vId']}/sddefault.jpg';
                                             ABmodel.ab4 = 'https://img.youtube.com/vi/${playlistDetails?[getRandomNumber(0, playlistDetails.length)]['vId']}/sddefault.jpg';
 
                                             ABmodel.playlistName = 'Top10Indian';
+                                            print("Start Screen: ${ playlistDetails!.length}");
+                                            ABmodel.playlistLength = playlistDetails.length;
                                             ABmodel.albumName = "India's Top Trending";
 
                                             ABmodel.currentTitle = songDetails['songTitle'].toString();
@@ -1183,6 +1188,7 @@ class _StartScreenState extends State<StartScreen> {
                                             ABmodel.ab4 =
                                                 'https://img.youtube.com/vi/${playlistDetails[8]['vId']}/hqdefault.jpg';
                                             ABmodel.playlistName = 'Punjabi';
+                                            ABmodel.playlistLength = playlistDetails.length;
                                             ABmodel.albumName =
                                                 "Latest Punjabi releases";
                                           });
@@ -1334,6 +1340,7 @@ class _StartScreenState extends State<StartScreen> {
                                             ABmodel.playlistName = 'Trending';
                                             ABmodel.albumName =
                                                 "Top Trending Worldwide";
+                                            ABmodel.playlistLength = playlistDetails!.length;
 
                                             ABmodel.tUrl =
                                                 songDetails['tUrl'].toString();
@@ -1503,6 +1510,7 @@ class _StartScreenState extends State<StartScreen> {
                                             ABmodel.playlistName = 'EngRom';
                                             ABmodel.albumName =
                                                 "Romatic hits of all time";
+                                            ABmodel.playlistLength = playlistDetails!.length;
 
                                             ABmodel.tUrl =
                                                 songDetails['tUrl'].toString();

@@ -202,7 +202,9 @@ class _PlayerState extends State<Player> {
                               model.currentAuthor,
                               model.tUrl,
                               model.filePath,
-                              model.tUrl);
+                              model.tUrl,
+                              model.vId,
+                          model.currentDuration);
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
                               content: Row(
@@ -356,7 +358,7 @@ class _PlayerState extends State<Player> {
   }
 
   Future<void> addToPlaylist(String playlistName, String songTitle,
-      String artist, String thumb, String audPath, String tempUrl) async {
+      String artist, String thumb, String audPath, String tempUrl, String vId, int dur) async {
     var playlistProvider =
         Provider.of<PlaylistProvider>(context, listen: false);
     final nav = Provider.of<Playlists>(context, listen: false);
@@ -383,9 +385,11 @@ class _PlayerState extends State<Player> {
       songs.add({
         'songTitle': songTitle,
         'songAuthor': artist,
-        'tUrl': tempUrl,
-        'vId': audPath,
+        'tUrl': thumb,
+        'vId': vId,
+        'audPath' : audPath,
         'thumbnail': thumb,
+        'duration' : dur,
       });
 
       box.put('playlists', storedPlaylists);
@@ -504,7 +508,9 @@ class _PlayerState extends State<Player> {
                           model.currentAuthor,
                           model.tUrl,
                           model.filePath,
-                          model.tUrl);
+                          model.tUrl,
+                          model.vId,
+                      model.currentDuration);
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Row(

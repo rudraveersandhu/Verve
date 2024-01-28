@@ -46,6 +46,7 @@ class _SplashScreenState extends State<SplashScreen> {
 
   @override
   void initState(){
+
     makePlaylist('My Songs');
     makePlaylist('blank');
 
@@ -58,23 +59,40 @@ class _SplashScreenState extends State<SplashScreen> {
     setRecomendations('Trending', 200, 'PLMC9KNkIncKseYxDN2niH6glGRWKsLtde');
     setRecomendations('Punjabi', 166, 'PLFFyMei_d85XIZGAtpgX6SKyEqOmyGlSq');
     setRecomendations('EngRom', 189, 'PLgzTt0k8mXzE6H9DDgiY7Pd8pKZteis48');
+
     readLastSong();
 
+    getName();
+
     Future.delayed(
-        const Duration(seconds: 3))
-        .then((value) => Navigator.push(context, MaterialPageRoute(
+        const Duration(seconds: 3)).then((value) => Navigator.push(context, MaterialPageRoute(
         builder: (context) => HomeScreen()
-    ))
-    );
+    )));
+
     super.initState();
+
   }
+
+  getName() async {
+    final model = context.read<BottomPlayerModel>();
+    final box = await Hive.openBox('User');
+    var x =  await box.get('name').toString();
+
+    if(x == 'null' || x == ''){
+      x = 'Guest';
+    }
+
+    setState(() {
+      model.user = x;
+    });
+  }
+
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     getPlaylists();
   }
-
 
   Future<void> setRecomendations(String playlistName, int NumOfItems, String playlistId) async {
     var yt = YoutubeExplode();
@@ -86,7 +104,6 @@ class _SplashScreenState extends State<SplashScreen> {
     final nav = Provider.of<Playlists>(context, listen: false);
     final box = await Hive.openBox('playlists');
 
-
     List<dynamic> storedPlaylists = box.get('playlists', defaultValue: []);
 
     // Find the playlist
@@ -95,12 +112,12 @@ class _SplashScreenState extends State<SplashScreen> {
       orElse: () => {
         'name': playlistName,
         'songs': [],
-        'about' : ''
+        'about': '',
       },
     );
 
+    // Check if the playlist name is not already in nav.playlist
     setState(() {
-
       if (!nav.playlist.contains(playlistName)) {
         nav.playlist.add(playlistName);
         playlistProvider.updatePlaylist(nav.playlist);
@@ -111,34 +128,33 @@ class _SplashScreenState extends State<SplashScreen> {
 
     List<dynamic> songs = mySongsPlaylist['songs'];
 
-
-    for(int i=0;i<NumOfItems;i++){
+    // Check if the song with the same ID is already in the playlist
+    for (int i = 0; i < NumOfItems; i++) {
       var song = playlistVideos[i];
 
-      songs.add({
-        'songTitle': song.title.toString(),
-        'songAuthor': song.author.toString(),
-        'tUrl': "https://img.youtube.com/vi/${song.id}/hqdefault.jpg",
-        'vId': song.id.toString(),
-        'thumbnail': "",
-        'date' : ""
-      });
+      if (!songs.any((s) => s['vId'] == song.id.toString())) {
+        songs.add({
+          'songTitle': song.title.toString(),
+          'songAuthor': song.author.toString(),
+          'tUrl': "https://img.youtube.com/vi/${song.id}/hqdefault.jpg",
+          'vId': song.id.toString(),
+          'thumbnail': "",
+          'date': "",
+        });
+      }
     }
 
     box.put('playlists', storedPlaylists);
   }
 
+
   getPlaylists() async {
     var playlistProvider = Provider.of<PlaylistProvider>(context, listen: false);
-
     final nav = Provider.of<Playlists>(context, listen: false);
 
     try {
-
       final box = await Hive.openBox('playlists');
-
       List<dynamic> playlists = box.get('playlists', defaultValue: []);
-
       List<String> playlistNames = playlists.map((playlist) => playlist['name'].toString()).toList();
 
       setState(() {
@@ -159,11 +175,8 @@ class _SplashScreenState extends State<SplashScreen> {
     var playlistProvider = Provider.of<PlaylistProvider>(context, listen: false);
 
     try {
-
       final box = await Hive.openBox('playlists');
-
       List<dynamic> playlists = box.get('playlists', defaultValue: []);
-
       bool playlistExists = playlists.any((playlist) => playlist['name'] == playlistName);
 
       if (!playlistExists) {
@@ -178,7 +191,6 @@ class _SplashScreenState extends State<SplashScreen> {
           'songs': [],
           'about' : ''
         });
-
         await box.put('playlists', playlists);
         await box.close();
         print('Playlist $playlistName created successfully.');
@@ -186,7 +198,6 @@ class _SplashScreenState extends State<SplashScreen> {
         print('Playlist $playlistName already exists.');
       }
     } catch (e) {
-
       print("Error accessing Hive box: $e");
     }
   }
@@ -232,7 +243,6 @@ class _SplashScreenState extends State<SplashScreen> {
 
   }*/
 
-
   Color convertStringToColor(String colorString) {
     String hexString = colorString.replaceAll("Color(", "").replaceAll(")", "").replaceAll("0x", "");
     int hexValue = int.parse(hexString, radix: 16);
@@ -249,12 +259,16 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   void readLastSong() async {
+
     final model = context.read<BottomPlayerModel>();
+
     final box = await Hive.openBox('retain');
+
     if(box.get('song') == null){
+
       print('null hai bhai');
 
-    }else {
+    } else {
       updateCardColorFromHive();
       setState(() {
         model.currentTitle = box.get('song');
@@ -272,7 +286,7 @@ class _SplashScreenState extends State<SplashScreen> {
     final box = await Hive.openBox('retain');
     String audpath = box.get('audPath').toString();
     final audio = Provider.of<PlayAudio>(context, listen: false);
-    await audio.initializeAudioPlayer(audpath,'');
+    await audio.initializeAudioPlayer(audpath);
   }
 
   @override

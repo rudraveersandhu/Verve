@@ -20,6 +20,8 @@ class _AlbumCollectionState extends State<AlbumCollection> {
   final ScrollController _controller1 = ScrollController();
   final ScrollController _controller2 = ScrollController();
   bool track1 = false;
+  late List<bool> isPlayingList ;
+  int currentlyPlayingIndex = -1;
 
   void _onScrollEvent() {
     //final extentAfter = _controller1.position.extentAfter;
@@ -32,6 +34,9 @@ class _AlbumCollectionState extends State<AlbumCollection> {
   @override
   void initState() {
     // TODO: implement initState
+    final ABmodel = Provider.of<AlbumModel>(context, listen: false);
+    isPlayingList = List.generate(ABmodel.playlistLength , (index) => false);
+    print(ABmodel.playlistLength );
     //_controller1.addListener(_onScrollEvent);
     _controller2.addListener(_onScrollEvent);
     /*_controller2.addListener(() {
@@ -54,6 +59,7 @@ class _AlbumCollectionState extends State<AlbumCollection> {
   @override
   Widget build(BuildContext context) {
     final ABmodel = Provider.of<AlbumModel>(context, listen: false);
+    final model = context.read<BottomPlayerModel>();
     return Container(
       height: MediaQuery.of(context).size.height,
       decoration: BoxDecoration(
@@ -335,7 +341,7 @@ class _AlbumCollectionState extends State<AlbumCollection> {
                                       final audio = Provider.of<PlayAudio>(context, listen: false);
                                       final model = context.read<BottomPlayerModel>();
 
-                                      List path_dur = await DownloadVideo().downloadVideo(songDetails['vId'].toString(),'download');  // Download the audio file, return a list with file location and duration
+                                      List path_dur = await DownloadVideo().downloadVideo(songDetails['vId'].toString());  // Download the audio file, return a list with file location and duration
 
                                       await _updateCard(
                                           songDetails['tUrl'].toString(),
@@ -353,108 +359,135 @@ class _AlbumCollectionState extends State<AlbumCollection> {
                                       await audio.playAudio();
 
                                       setState(()  {
+                                        isPlayingList[index] = !isPlayingList[index];
+
+                                        if (currentlyPlayingIndex != index) {
+                                          if (currentlyPlayingIndex != -1) { // If a new item is clicked, this stops the currently playing item
+                                            isPlayingList[currentlyPlayingIndex] = false;
+                                          }
+                                          currentlyPlayingIndex = index; // Updating the currently playing index
+                                        }
                                         //ABmodel.currentDuration = (path_dur[1]).toInt();
                                         model.filePath = path_dur[0];
+                                        //isPlayingList[index] = true;
                                       });
                                     },
-                                    child: Container(
-                                      height: 70,
-                                      width:
-                                          MediaQuery.of(context).size.width - 5,
-                                      color: Colors.transparent,
-                                      child: Row(
-                                        children: [
-                                          Padding(
-                                            padding: const EdgeInsets.only(
-                                                left: 15.0),
-                                            child: Container(
-                                              width: 60.0,
-                                              height: 60.0,
-                                              decoration: BoxDecoration(
-                                                boxShadow: [
-                                                  BoxShadow(
-                                                    color: Colors.black
-                                                        .withOpacity(0.8),
-                                                    spreadRadius: 2,
-                                                    blurRadius: 7,
-                                                    offset: Offset(2, 3),
-                                                  ),
-                                                ],
-                                                color: Colors.orange,
-                                                borderRadius:
-                                                    BorderRadius.circular(2.0),
-                                              ),
-                                              child: ClipRRect(
-                                                borderRadius:
-                                                    BorderRadius.circular(2),
-                                                child: PhotoView(
-                                                  imageProvider: NetworkImage(
-                                                      songDetails!['tUrl']
-                                                          .toString()),
-                                                  customSize: Size(120, 120),
-                                                  enableRotation: true,
-                                                  backgroundDecoration:
-                                                      BoxDecoration(
-                                                    color: Theme.of(context)
-                                                        .canvasColor,
+                                    child: Padding(
+                                      padding: const EdgeInsets.only(bottom: 3.0),
+                                      child: Container(
+                                        height: 70,
+                                        width:
+                                            MediaQuery.of(context).size.width - 5,
+                                        color: Colors.transparent,
+                                        child: Row(
+                                          children: [
+                                            Padding(
+                                              padding: const EdgeInsets.only(
+                                                  left: 15.0),
+                                              child: Container(
+                                                width: 60.0,
+                                                height: 60.0,
+                                                decoration: BoxDecoration(
+                                                  boxShadow: [
+                                                    BoxShadow(
+                                                      color: Colors.black
+                                                          .withOpacity(0.8),
+                                                      spreadRadius: 2,
+                                                      blurRadius: 7,
+                                                      offset: Offset(2, 3),
+                                                    ),
+                                                  ],
+                                                  color: Colors.orange,
+                                                  borderRadius:
+                                                      BorderRadius.circular(2.0),
+                                                ),
+                                                child: ClipRRect(
+                                                  borderRadius:
+                                                      BorderRadius.circular(2),
+                                                  child: PhotoView(
+                                                    imageProvider: NetworkImage(
+                                                        songDetails!['tUrl']
+                                                            .toString()),
+                                                    customSize: Size(120, 120),
+                                                    enableRotation: true,
+                                                    backgroundDecoration:
+                                                        BoxDecoration(
+                                                      color: Theme.of(context)
+                                                          .canvasColor,
+                                                    ),
                                                   ),
                                                 ),
                                               ),
                                             ),
-                                          ),
-                                          Column(
-                                            children: [
-                                              Padding(
-                                                padding: const EdgeInsets.only(
-                                                    top: 12.0,
-                                                    left: 12,
-                                                    right: 12
-                                                ),
-                                                child: Container(
-                                                  width: 220,
-                                                  child: Text(
-                                                    songDetails['songTitle']
-                                                        .toString(),
-                                                    maxLines: 1,
-                                                    overflow:
-                                                        TextOverflow.ellipsis,
-                                                    style: const TextStyle(
-                                                      color: Colors.white,
-                                                      fontSize: 14,
-                                                      fontWeight:
-                                                          FontWeight.w600,
+                                            Column(
+                                              children: [
+                                                Padding(
+                                                  padding: const EdgeInsets.only(
+                                                      top: 12.0,
+                                                      left: 12,
+                                                      right: 12
+                                                  ),
+                                                  child: Container(
+                                                    width: 220,
+                                                    child: Text(
+                                                      songDetails['songTitle']
+                                                          .toString(),
+                                                      maxLines: 1,
+                                                      overflow:
+                                                          TextOverflow.ellipsis,
+                                                      style: const TextStyle(
+                                                        color: Colors.white,
+                                                        fontSize: 14,
+                                                        fontWeight:
+                                                            FontWeight.w600,
+                                                      ),
                                                     ),
                                                   ),
                                                 ),
-                                              ),
-                                              Padding(
-                                                padding: const EdgeInsets.only(
-                                                    top: 5.0),
-                                                child: Container(
-                                                  width: 220,
-                                                  child: Text(
-                                                    songDetails['songAuthor']
-                                                        .toString(),
-                                                    style: const TextStyle(
-                                                      color: Colors.grey,
-                                                      fontSize: 13,
-                                                      fontWeight:
-                                                          FontWeight.w500,
+                                                Padding(
+                                                  padding: const EdgeInsets.only(
+                                                      top: 5.0),
+                                                  child: Container(
+                                                    width: 220,
+                                                    child: Text(
+                                                      songDetails['songAuthor']
+                                                          .toString(),
+                                                      style: const TextStyle(
+                                                        color: Colors.grey,
+                                                        fontSize: 13,
+                                                        fontWeight:
+                                                            FontWeight.w500,
+                                                      ),
                                                     ),
                                                   ),
                                                 ),
-                                              ),
-                                            ],
-                                          ),
-                                          SizedBox(
-                                            width: 15,
-                                          ),
-                                          Icon(
-                                            Icons.play_arrow,
-                                            color: Colors.white,
-                                            size: 33,
-                                          )
-                                        ],
+                                              ],
+                                            ),
+                                            SizedBox(
+                                              width: 15,
+                                            ),
+                                            Builder(
+                                              builder: (context) {
+                                                return AnimatedSwitcher(
+                                                  duration: Duration(milliseconds: 500),
+                                                  child: isPlayingList[index] && model.playButtonOn
+                                                      ? Icon(CupertinoIcons.pause_solid, color: Colors.white, key: Key('pause'))
+                                                      : Icon(CupertinoIcons.play_arrow_solid,color: Colors.white, key: Key('play')),
+                                                  transitionBuilder: (child, animation) {
+                                                    return ScaleTransition(
+                                                      scale: animation,
+                                                      child: child,
+                                                    );
+                                                  },
+                                                );
+                                              }
+                                            ),
+                                            /*Icon(
+                                              isPlayingList[index] && model.playButtonOn ? CupertinoIcons.pause : CupertinoIcons.play_arrow_solid,
+                                              color: Colors.white,
+                                            ),*/
+                                          ],
+                                        ),
                                       ),
                                     ),
                                   );

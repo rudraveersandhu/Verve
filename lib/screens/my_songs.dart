@@ -44,6 +44,13 @@ class _MySongsState extends State<MySongs> {
   String audpath = "";
   Color cardBackgroundColor = Colors.indigo;
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    accessPlaylist(widget.title);
+  }
+
+
   Future<List<Map<String, Object>>> accessPlaylist(String targetPlaylistName) async {
     final box = await Hive.openBox('playlists');
     List<dynamic> storedPlaylists = box.get('playlists', defaultValue: []);
@@ -60,14 +67,19 @@ class _MySongsState extends State<MySongs> {
       for (var song in songs) {
         String songTitle = song['songTitle'];
         String songAuthor = song['songAuthor'];
-        String tUrl = song['tUrl'];
+        String tUrl = song['thumbnail'];
         String vId = song['vId'];
+        String audPath = song['audPath'];
+        int duration = song['duration'].toInt();
+
 
         playlistDetails.add({
           'songTitle': songTitle,
           'songAuthor': songAuthor,
           'tUrl': tUrl,
           'vId': vId,
+          'audPath' : audPath,
+          'duration' : duration,
         });
       }
       return playlistDetails;
@@ -193,17 +205,19 @@ class _MySongsState extends State<MySongs> {
                             child: GestureDetector(
                               onTap: () async {
                                 await _updateCardColor(songDetails['tUrl'].toString());
-                                updateRetain(songDetails['songTitle'].toString(), songDetails['songAuthor'].toString(), songDetails['tUrl'].toString(), songDetails['vId'].toString(), songDetails['tUrl'].toString());
-                                audio.initializeAudioPlayer(songDetails['vId'].toString(),'downloaded');
+                                updateRetain(songDetails['songTitle'].toString(), songDetails['songAuthor'].toString(), songDetails['tUrl'].toString(), songDetails['audPath'].toString(),songDetails['vId'].toString(), songDetails['tUrl'].toString());
+                                audio.initializeAudioPlayer(songDetails['audPath'].toString());
                                 audio.playAudio();
                                 setState(() {
+                                  model.currentDuration = (songDetails['duration'] as int?) ?? 0;
                                   model.isCardVisible = true;
                                   model.tUrl = songDetails['tUrl'].toString();
                                   model.currentTitle = songDetails['songTitle'].toString();
                                   model.currentAuthor = songDetails['songAuthor'].toString();
-                                  model.filePath = songDetails['vId'].toString();
-                                  model.isCardVisible = true;
+                                  model.filePath = songDetails['audPath'].toString();
+                                  model.vId = songDetails['vId'].toString();
                                   model.playButtonOn = true;
+
                                 });
                               },
                               child: ListTile(
@@ -307,12 +321,13 @@ class _MySongsState extends State<MySongs> {
     await box.close();
   }
 
-  void updateRetain(String songTitle, String artist, String thumb, String audPath, String tempUrl) async {
+  void updateRetain(String songTitle, String artist, String thumb, String audPath, String vId, String tempUrl) async {
     final box = await Hive.openBox('retain');
     box.put('song', songTitle);
     box.put('author', artist);
     box.put('tUrl', thumb);
-    box.put('audPath', audpath);
+    box.put('audPath', audPath);
+    box.put('vId', vId);
     box.put('tempUrl', tempUrl);
 
   }

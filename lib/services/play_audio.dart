@@ -46,9 +46,9 @@ class PlayAudio with ChangeNotifier {
     audioPlayer.playerStateStream.listen((playerState) {
       //print('Player state changed: $playerState');
       //print('Duration: ${getDuration()} seconds');
-      print('Current Position: ${getCurrentPosition()} seconds');
-      print("Tracker: $tracker");
-      print("Index: $strack");
+      //print('Current Position: ${getCurrentPosition()} seconds');
+      //print("Tracker: $tracker");
+      //print("Index: $strack");
       // Check for the condition to reset position
       if (tracker == 'single' &&  playerState.playing && playerState.processingState == ProcessingState.completed ) {
           print('Resetting player position to initial');
@@ -67,7 +67,7 @@ class PlayAudio with ChangeNotifier {
   }
 
   Future<void> loadNextFromPlaylist(int index,playlistDetails) async {
-    List path_dur = await DownloadVideo().downloadVideo(playlist[index]['vId'].toString(),'download');  // Download the audio file, return a list with file location and duration
+    List path_dur = await DownloadVideo().downloadVideo(playlist[index]['vId'].toString());  // Download the audio file, return a list with file location and duration
 
     await updateCard(playlist[index]['tUrl'].toString(),
         'playlist',
@@ -85,16 +85,9 @@ class PlayAudio with ChangeNotifier {
     return audioPlayer.duration?.inSeconds ?? 0;
   }
 
-  Future<void> initializeAudioPlayer(String filePath, String mode) async {
-
-    if(mode == 'stream'){
-      await audioPlayer.setUrl(filePath);
-      notifyListeners();
-
-    } else if(mode == 'downloaded') {
-      await audioPlayer.setFilePath(filePath);
-      notifyListeners();
-    }
+  Future<void> initializeAudioPlayer(String filePath) async {
+    await audioPlayer.setFilePath(filePath);
+    notifyListeners();
   }
 
   Future<void> initializePlaylistAudioPlayer(rplaylist, int index, List path_dur) async {

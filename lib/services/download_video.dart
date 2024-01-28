@@ -38,7 +38,54 @@ class DownloadVideo {
     return file.existsSync();
   }
 
-  Future<List> downloadVideo(String videoId, String mode) async {
+  Future<List> downloadVideoWithProgress(String videoId,void Function(double) progressCallback) async {
+    final appDocDir = await getApplicationDocumentsDirectory();
+    final filePath = '${appDocDir.path}/$videoId.mp3';
+
+    var youtube = YoutubeExplode();
+    double totalSize = 100.0;
+    double downloadedSize = 0.0;
+
+    for (int i = 0; i < 10; i++) {
+      await Future.delayed(Duration(milliseconds: 70)); // Simulate download delay
+      downloadedSize += 10.0;                           // Simulate downloaded data
+      double progress = downloadedSize / totalSize;     //
+      progressCallback(progress);                       // Call the progress callback
+    }
+
+    try {if(fileExists(filePath)){
+      double dur = await getFileDuration(filePath);
+      return [filePath,dur];
+    } else if (!fileExists(filePath))
+    {
+      var streamManifest = await youtube.videos.streamsClient.getManifest(videoId); // Get the stream manifest for the video
+      var audioOnlyStreams = streamManifest.audioOnly; // Get the audio-only streams from the manifest
+      var audioStream = audioOnlyStreams.where((stream) => stream.audioCodec == 'mp4a.40.2').withHighestBitrate(); // Get the highest quality audio-only stream
+
+
+      //download logic
+      var audioStreamBytes = await youtube.videos.streamsClient.get(audioStream).toList(); // Get the audio stream as bytes
+      await File(filePath).writeAsBytes(Uint8List.fromList(audioStreamBytes.expand((e) => e).toList()));// Save the audio stream to a file
+      double duration =  await getFileDuration(filePath);
+      List path_dur = [filePath,duration];
+      return path_dur;
+
+
+    }else{
+      print("error");
+      return [0,0];
+    }} catch (e, stackTrace) {
+      print("Error: $e");
+      print("StackTrace: $stackTrace");
+
+      print("An error occurred while processing the request.");
+      return [0,0];
+    }finally {
+      youtube.close();
+    }
+  }
+
+  Future<List> downloadVideo(String videoId) async {
     final appDocDir = await getApplicationDocumentsDirectory();
     final filePath = '${appDocDir.path}/$videoId.mp3';
     var youtube = YoutubeExplode();
@@ -52,17 +99,14 @@ class DownloadVideo {
       var audioOnlyStreams = streamManifest.audioOnly; // Get the audio-only streams from the manifest
       var audioStream = audioOnlyStreams.where((stream) => stream.audioCodec == 'mp4a.40.2').withHighestBitrate(); // Get the highest quality audio-only stream
 
-      if (mode == "download"){  //download logic
-        var audioStreamBytes = await youtube.videos.streamsClient.get(audioStream).toList(); // Get the audio stream as bytes
-        await File(filePath).writeAsBytes(Uint8List.fromList(audioStreamBytes.expand((e) => e).toList()));// Save the audio stream to a file
-        double duration =  await getFileDuration(filePath);
-        List path_dur = [filePath,duration];
-        return path_dur;
+      //download logic
+      var audioStreamBytes = await youtube.videos.streamsClient.get(audioStream).toList(); // Get the audio stream as bytes
+      await File(filePath).writeAsBytes(Uint8List.fromList(audioStreamBytes.expand((e) => e).toList()));// Save the audio stream to a file
+      double duration =  await getFileDuration(filePath);
+      List path_dur = [filePath,duration];
+      return path_dur;
 
-      } else {
-        youtube.close();
-        return [0,0];
-      }
+
     }else{
       print("error");
       return [0,0];
