@@ -22,6 +22,8 @@
 // * Project Git: https://github.com/rudraveersandhu/Verve
 // *
 
+import 'dart:math';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:just_audio/just_audio.dart';
@@ -30,7 +32,7 @@ import 'download_video.dart';
 
 class PlayAudio with ChangeNotifier {
 
-  final Function(String , String , String , String , int ) updateCard;
+  final Function(String, String, String, String, List  ) updateCard;
 
   final AudioPlayer audioPlayer = AudioPlayer();
   String tracker = '';
@@ -38,9 +40,7 @@ class PlayAudio with ChangeNotifier {
   String playlistName = '' ;
   late int dur;
   late var playlist ;
-
-
-
+  String mode='';
 
   PlayAudio({required this.updateCard}) {
     audioPlayer.playerStateStream.listen((playerState) {
@@ -49,6 +49,7 @@ class PlayAudio with ChangeNotifier {
       //print('Current Position: ${getCurrentPosition()} seconds');
       //print("Tracker: $tracker");
       //print("Index: $strack");
+
       // Check for the condition to reset position
       if (tracker == 'single' &&  playerState.playing && playerState.processingState == ProcessingState.completed ) {
           print('Resetting player position to initial');
@@ -57,28 +58,13 @@ class PlayAudio with ChangeNotifier {
       }
       if (playerState.playing && playerState.processingState == ProcessingState.completed && tracker == 'playlist' ){
         print("hogaya khatam bsdk");
+        print("current mode : $mode");
         stopAudio();
         //audioPlayer.seek(Duration(seconds: 0));
-        loadNextFromPlaylist(strack+1, playlist);
-
+        loadNextFromPlaylist(strack, playlist, mode);
         //initializePlaylistAudioPlayer(playlist, strack+1,[]);
       }
     });
-  }
-
-  Future<void> loadNextFromPlaylist(int index,playlistDetails) async {
-    List path_dur = await DownloadVideo().downloadVideo(playlist[index]['vId'].toString());  // Download the audio file, return a list with file location and duration
-
-    await updateCard(playlist[index]['tUrl'].toString(),
-        'playlist',
-        playlist[index]['songTitle'].toString(),
-        playlist[index]['songAuthor'].toString(),
-        path_dur[1].toInt());
-    notifyListeners();
-
-    initializePlaylistAudioPlayer(playlistDetails,index,path_dur);
-    playAudio();
-    //Future<List<Map<String,Object>>> playlist = accessPlaylist(playlistName);
   }
 
   Future<int> getDuration() async {
@@ -90,7 +76,10 @@ class PlayAudio with ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> initializePlaylistAudioPlayer(rplaylist, int index, List path_dur) async {
+  Future<void> initializePlaylistAudioPlayer(rplaylist, int index, List path_dur, int check, String pmode) async {
+    if (check == 0 && pmode == ''){
+      mode = 'linear';
+    }
     tracker = 'playlist';
     playlist = rplaylist;
     strack = index;
@@ -101,6 +90,65 @@ class PlayAudio with ChangeNotifier {
     await audioPlayer.setFilePath(audpath);
     notifyListeners();
   }
+
+  Future<void> loadNextFromPlaylist(int index,playlistDetails, String mode) async {
+
+    // Linear mode
+    if(mode == 'linear'){
+      index = index + 1;
+      List path_dur = await DownloadVideo().downloadVideo(playlist[index]['vId'].toString());  // Download the audio file, return a list with file location and duration
+
+      await updateCard(playlist[index]['tUrl'].toString(),
+          'playlist',
+          playlist[index]['songTitle'].toString(),
+          playlist[index]['songAuthor'].toString(),
+          path_dur
+      );
+      notifyListeners();
+      await initializePlaylistAudioPlayer(playlistDetails,index,path_dur, 1,mode);
+      await playAudio();
+    }
+
+    // Shuffle mode
+    else if (mode == 'shuffle'){
+      index = getRandomNumber(0, playlistDetails.length);
+      List path_dur = await DownloadVideo().downloadVideo(playlist[index]['vId'].toString());  // Download the audio file, return a list with file location and duration
+      await updateCard(playlist[index]['tUrl'].toString(),
+          'playlist',
+          playlist[index]['songTitle'].toString(),
+          playlist[index]['songAuthor'].toString(),
+          path_dur);
+      notifyListeners();
+      await initializePlaylistAudioPlayer(playlistDetails,index,path_dur, 1,mode);
+      await playAudio();
+
+    }
+    // None
+    else if(mode == 'none'){
+      audioPlayer.seek(Duration(seconds: 0));
+    }
+    // Repeat mode
+    else if (mode == 'repeat'){
+      List path_dur = await DownloadVideo().downloadVideo(playlist[index]['vId'].toString());  // Download the audio file, return a list with file location and duration
+      await updateCard(playlist[index]['tUrl'].toString(),
+          'playlist',
+          playlist[index]['songTitle'].toString(),
+          playlist[index]['songAuthor'].toString(),
+          path_dur);
+      notifyListeners();
+      initializePlaylistAudioPlayer(playlistDetails,index,path_dur,1,mode);
+      playAudio();
+    }
+    //Future<List<Map<String,Object>>> playlist = accessPlaylist(playlistName);
+  }
+
+  getRandomNumber(int min, int max) {
+    Random random = Random();
+    // Generate a random number within the specified range
+    int randomNumber = min + random.nextInt(max - min + 1);
+    return randomNumber;
+  }
+
 
   int getCurrentPosition() {
     return audioPlayer.position.inSeconds;

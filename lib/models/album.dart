@@ -39,6 +39,7 @@ class AlbumModel extends ChangeNotifier {
   String ab2 = '';
   String ab3 = '';
   String ab4 = '';
+  String playMode = '';
 
 
   void updateData({
@@ -56,6 +57,7 @@ class AlbumModel extends ChangeNotifier {
     required String ab4,
     required String playlistName,
     required String albumName,
+    required String playMode,
     required int currentDuration,
     required int playlistLength,
 
@@ -76,6 +78,7 @@ class AlbumModel extends ChangeNotifier {
     this.ab2 = ab2;
     this.ab3 = ab3;
     this.ab4 = ab4;
+    this.playMode = playMode;
     notifyListeners();
   }
 }

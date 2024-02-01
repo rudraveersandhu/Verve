@@ -48,23 +48,25 @@ Future<void> main() async {
           create: (context) => BottomPlayerModel(),
         ),
         ChangeNotifierProvider<PlayAudio>(
-          create: (context) => PlayAudio(updateCard: (tUrl, mode , title , author , dur ) async {
-            print("${tUrl},${mode},${title},${author},${dur}");
-            if(mode == 'playlist'){
-              PaletteGenerator paletteGenerator = await PaletteGenerator.fromImageProvider(NetworkImage(tUrl));
-              final model = context.read<BottomPlayerModel>();
-              //final box = await Hive.openBox('retain');
-              print("automatic update successful _____________________________________________________________");
+          create: (context) => PlayAudio(
+              updateCard: (tUrl, mode, title, author, dur) async {
+                print("${tUrl},${mode},${title},${author},${dur}");
+                if(mode == 'playlist'){
+                  PaletteGenerator paletteGenerator = await PaletteGenerator.fromImageProvider(NetworkImage(tUrl));
+                  final model = context.read<BottomPlayerModel>();
+                  //final box = await Hive.openBox('retain');
+                  print("automatic update successful _____________________________________________________________");
 
-                model.cardBackgroundColor = paletteGenerator.dominantColor!.color;
-                model.currentTitle = title;
-                model.currentAuthor = author;
-                model.tUrl = tUrl;
-                model.playButtonOn = true;
-                model.isCardVisible = true;
-                model.currentDuration = dur.toInt();
+                    model.cardBackgroundColor = paletteGenerator.dominantColor!.color;
+                    model.currentTitle = title;
+                    model.currentAuthor = author;
+                    model.tUrl = tUrl;
+                    model.playButtonOn = true;
+                    model.isCardVisible = true;
+                    model.currentDuration = dur[1].toInt();
+                    model.filePath = dur[0].toString();
 
-                //box.put('color', paletteGenerator.dominantColor!.color.toString());
+                    //box.put('color', paletteGenerator.dominantColor!.color.toString());
 
             }
 
@@ -96,7 +98,7 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme:
-            ColorScheme.fromSeed(seedColor: Colors.orange.withAlpha(1000)),
+            ColorScheme.fromSeed(seedColor: Colors.orange.shade900),
         useMaterial3: true,
       ),
       home: const SplashScreen(),

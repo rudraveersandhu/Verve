@@ -21,6 +21,7 @@
 // *
 
 
+import 'dart:math';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/adapters.dart';
@@ -45,6 +46,10 @@ class _PlayerState extends State<Player> {
   Duration duration = Duration.zero;
   Duration position = Duration.zero;
   bool isPlaylistSelectorVisible = false;
+
+  bool linear = false;
+  bool shuffle = false;
+  bool repeat = false;
 
   String formatSecondsToTime(int seconds) {
     int hours = seconds ~/ 3600;
@@ -72,10 +77,13 @@ class _PlayerState extends State<Player> {
     });
   }
 
+
+
   @override
   Widget build(BuildContext context) {
     final model = context.watch<BottomPlayerModel>();
     final audio = Provider.of<PlayAudio>(context);
+    final ABmodel = context.read<AlbumModel>();
 
     return Scaffold(
       extendBodyBehindAppBar: true,
@@ -129,7 +137,7 @@ class _PlayerState extends State<Player> {
             gradient: LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
-              colors: [widget.color, Colors.black],
+              colors: [model.cardBackgroundColor, Colors.black],
             ),
           ),
           child: Column(
@@ -190,8 +198,10 @@ class _PlayerState extends State<Player> {
               ),
               SizedBox(height:5),
               Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
+
                   Padding(
                     padding: const EdgeInsets.only(right: 15.0),
                     child: GestureDetector(
@@ -204,15 +214,15 @@ class _PlayerState extends State<Player> {
                               model.filePath,
                               model.tUrl,
                               model.vId,
-                          model.currentDuration);
+                              model.currentDuration);
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
                               content: Row(
                                 mainAxisAlignment:
-                                    MainAxisAlignment.spaceEvenly,
+                                MainAxisAlignment.spaceEvenly,
                                 children: [
                                   Text('Added to "My Songs" successfully !',style: TextStyle(
-                                    fontSize: 12
+                                      fontSize: 12
                                   ),),
                                   SizedBox(
                                     width: 10,
@@ -224,7 +234,7 @@ class _PlayerState extends State<Player> {
                                         });
                                       },
                                       child: Container(
-                                        width: 50,
+                                          width: 50,
                                           child: Text('Change',overflow: TextOverflow.ellipsis,style: TextStyle(
                                               fontSize: 12
                                           ),))),
@@ -238,7 +248,7 @@ class _PlayerState extends State<Player> {
                                   900),
                               duration: Duration(
                                   seconds:
-                                      1),
+                                  1),
                             ),
                           );
                         },
@@ -246,7 +256,8 @@ class _PlayerState extends State<Player> {
                           Icons.playlist_add,
                           color: Colors.white70,
                           size: 35,
-                        )),
+                        )
+                    ),
                   ),
                 ],
               ),
@@ -340,6 +351,176 @@ class _PlayerState extends State<Player> {
                     ),
                   ),
                 ],
+              ),
+              SizedBox(
+                height: 20,
+              ),
+              Padding(
+                padding: const EdgeInsets.only(right: 10.0),
+                child: IntrinsicWidth(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: model.cardBackgroundColor.withOpacity(.3),
+                      borderRadius: BorderRadius.circular(15)
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Consumer<PlayAudio>(
+                          builder:((context, playmodeModel, child)=>
+                          playmodeModel.mode == "linear" ? Padding(
+                            padding: const EdgeInsets.only(left: 20.0),
+                            child: GestureDetector(
+                                onTap: () {
+                                  //final ABmodel = Provider.of<AlbumModel>(context, listen: false);
+                                  setState(() {
+                                    linear = false;
+                                    playmodeModel.mode = 'none';
+                                  });
+                                },
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                      color: Colors.black45,
+                                      borderRadius: BorderRadius.all(Radius.circular(10))
+                                  ),
+                                  child: Padding(
+                                    padding: const EdgeInsets.only(left: 10.0,right: 5,top: 5,bottom: 5),
+                                    child: Icon(
+                                      Icons.playlist_play,
+                                      color: Colors.deepOrange,
+                                      size: 45,
+                                    ),
+                                  ),
+                                )
+                            ),
+                          )
+                              : Padding(
+                            padding: const EdgeInsets.only(left: 20.0),
+                            child: GestureDetector(
+                                onTap: () {
+                                  //final ABmodel = context.read<AlbumModel>();
+                                  setState(() {
+                                    linear = true;
+                                    shuffle = false;
+                                    repeat = false;
+                                    playmodeModel.mode = 'linear';
+                                  });
+                                },
+                                child: Icon(
+                                  Icons.playlist_play,
+                                  color: Colors.white70,
+                                  size: 45,
+                                )
+                            ),
+                          )
+                          ),
+                        ),
+                        Consumer<PlayAudio>(
+                          builder:((context, playmodeModel, child)=>
+                          playmodeModel.mode == "shuffle" ? Padding(
+                            padding: const EdgeInsets.only(left: 20.0),
+                            child: GestureDetector(
+                                onTap: () {
+                                  //final ABmodel = context.read<AlbumModel>();
+                                  setState(() {
+                                    shuffle = false;
+                                    playmodeModel.mode = 'none';
+                                  });
+                                },
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                      color: Colors.black45,
+                                    borderRadius: BorderRadius.all(Radius.circular(10))
+                                  ),
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(10.0),
+                                    child: Icon(
+                                      Icons.shuffle,
+                                      color: Colors.deepOrange,
+                                      size: 35,
+                                    ),
+                                  ),
+                                )
+                            ),
+                          )
+                              :  Padding(
+                            padding: const EdgeInsets.only(left: 20.0),
+                            child: GestureDetector(
+                                onTap: () {
+                                  //final ABmodel = context.read<AlbumModel>();
+                                  setState(() {
+                                    shuffle = true;
+                                    linear = false;
+                                    repeat = false;
+                                    playmodeModel.mode = 'shuffle';
+                                  });
+                                },
+                                child: Icon(
+                                  Icons.shuffle,
+                                  color: Colors.white70,
+                                  size: 35,
+                                )
+                            ),
+                          )
+                          ),
+                            ),
+                        SizedBox(width: 4,),
+                        Consumer<PlayAudio>(
+                          builder:((context, playmodeModel, child)=>
+                          playmodeModel.mode == "repeat" ? Padding(
+                          padding: const EdgeInsets.only(left: 20.0),
+                          child: GestureDetector(
+                              onTap: () {
+                                //final ABmodel = context.read<AlbumModel>();
+                                setState(() {
+                                  repeat = false;
+                                  playmodeModel.mode = 'none';
+                                });
+                              },
+                              child: Container(
+                                decoration: BoxDecoration(
+                                    color: Colors.black45,
+                                    borderRadius: BorderRadius.all(Radius.circular(10))
+                                ),
+                                child: Padding(
+                                  padding: const EdgeInsets.all(10.0),
+                                  child: Icon(
+                                    Icons.repeat,
+                                    color: Colors.deepOrange,
+                                    size: 35,
+                                  ),
+                                ),
+                              )
+                          ),
+                        )
+                            : Padding(
+                          padding: const EdgeInsets.only(left: 20.0),
+                          child: GestureDetector(
+                              onTap: () {
+                                //final ABmodel = context.read<AlbumModel>();
+                                setState(() {
+                                  shuffle = false;
+                                  linear = false;
+                                  repeat = true;
+
+                                  playmodeModel.mode = 'repeat';
+                                });
+                              },
+                              child: Icon(
+                                Icons.repeat,
+                                color: Colors.white70,
+                                size: 35,
+                              )
+                          ),
+                        )
+                          ),
+                          ),
+
+                        SizedBox(width: 20,)
+                      ],
+                    ),
+                  ),
+                ),
               ),
             ],
           ),

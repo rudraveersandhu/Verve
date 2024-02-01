@@ -98,7 +98,8 @@ class _SplashScreenState extends State<SplashScreen> {
     var yt = YoutubeExplode();
     var playlist = await yt.playlists.get(playlistId);
     String about = playlist.description;
-    List playlistVideos = await yt.playlists.getVideos(playlist.id).take(NumOfItems).toList();
+    List playlistVideos = await yt.playlists.getVideos(playlist.id).take(
+        NumOfItems).toList();
     var playlistProvider =
     Provider.of<PlaylistProvider>(context, listen: false);
     final nav = Provider.of<Playlists>(context, listen: false);
@@ -109,7 +110,8 @@ class _SplashScreenState extends State<SplashScreen> {
     // Find the playlist
     var mySongsPlaylist = storedPlaylists.firstWhere(
           (playlist) => playlist['name'] == playlistName,
-      orElse: () => {
+      orElse: () =>
+      {
         'name': playlistName,
         'songs': [],
         'about': '',
@@ -129,20 +131,22 @@ class _SplashScreenState extends State<SplashScreen> {
     List<dynamic> songs = mySongsPlaylist['songs'];
 
     // Check if the song with the same ID is already in the playlist
-    for (int i = 0; i < NumOfItems; i++) {
-      var song = playlistVideos[i];
 
-      if (!songs.any((s) => s['vId'] == song.id.toString())) {
-        songs.add({
-          'songTitle': song.title.toString(),
-          'songAuthor': song.author.toString(),
-          'tUrl': "https://img.youtube.com/vi/${song.id}/hqdefault.jpg",
-          'vId': song.id.toString(),
-          'thumbnail': "",
-          'date': "",
-        });
+      for (int i = 0; i < NumOfItems; i++) {
+        var song = playlistVideos[i];
+
+        if (!songs.any((s) => s['vId'] == song.id.toString())) {
+          songs.add({
+            'songTitle': song.title.toString(),
+            'songAuthor': song.author.toString(),
+            'tUrl': "https://img.youtube.com/vi/${song.id}/hqdefault.jpg",
+            'vId': song.id.toString(),
+            'thumbnail': "",
+            'date': "",
+          });
+        }
       }
-    }
+
 
     box.put('playlists', storedPlaylists);
   }

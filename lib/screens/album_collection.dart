@@ -22,6 +22,10 @@ class _AlbumCollectionState extends State<AlbumCollection> {
   bool track1 = false;
   late List<bool> isPlayingList ;
   int currentlyPlayingIndex = -1;
+  bool _isMounted = false;
+  bool linear = false;
+  bool shuffle = false;
+  bool repeat = false ;
 
   void _onScrollEvent() {
     //final extentAfter = _controller1.position.extentAfter;
@@ -34,9 +38,10 @@ class _AlbumCollectionState extends State<AlbumCollection> {
   @override
   void initState() {
     // TODO: implement initState
+    _isMounted = true;
     final ABmodel = Provider.of<AlbumModel>(context, listen: false);
     isPlayingList = List.generate(ABmodel.playlistLength , (index) => false);
-    print(ABmodel.playlistLength );
+    print("Printing playlist detains from album collection : ${ABmodel.playlistLength}");
     //_controller1.addListener(_onScrollEvent);
     _controller2.addListener(_onScrollEvent);
     /*_controller2.addListener(() {
@@ -51,6 +56,7 @@ class _AlbumCollectionState extends State<AlbumCollection> {
   @override
   void dispose() {
     // TODO: implement dispose
+    _isMounted = false;
     _controller1.dispose();
     _controller2.dispose();
     super.dispose();
@@ -259,6 +265,7 @@ class _AlbumCollectionState extends State<AlbumCollection> {
                             child: Container(
                                 width: MediaQuery.of(context).size.width - 120,
                                 child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.start,
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Row(
@@ -295,6 +302,117 @@ class _AlbumCollectionState extends State<AlbumCollection> {
                                             fontSize: 18,
                                             fontWeight: FontWeight.w600),
                                       ),
+                                    ),
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.start,
+                                      children: [
+                                        Consumer<PlayAudio>(
+                                          builder:((context, playmodeModel, child)=>
+                                          playmodeModel.mode == "linear" ? GestureDetector(
+                                              onTap: () {
+                                                //final ABmodel = Provider.of<AlbumModel>(context, listen: false);
+                                                setState(() {
+                                                  linear = false;
+                                                  playmodeModel.mode = 'none';
+                                                });
+                                              },
+                                              child: Icon(
+                                                Icons.playlist_play,
+                                                color: ABmodel.cardBackgroundColor.withRed(ABmodel.cardBackgroundColor.red + 80).withGreen(ABmodel.cardBackgroundColor.green + 80).withBlue(ABmodel.cardBackgroundColor.blue + 80),
+                                                size: 40,
+                                              )
+                                          )
+                                              : GestureDetector(
+                                                  onTap: () {
+                                                    //final ABmodel = context.read<AlbumModel>();
+                                                    setState(() {
+                                                      linear = true;
+                                                      shuffle = false;
+                                                      repeat = false;
+                                                      playmodeModel.mode = 'linear';
+                                                    });
+                                                  },
+                                                  child: Icon(
+                                                    Icons.playlist_play,
+                                                    color: Colors.white70,
+                                                    size: 40,
+                                                  )
+                                              )
+                                          ),
+                                        ),
+                                        SizedBox(width: 10,),
+                                        Consumer<PlayAudio>(
+                                          builder:((context, playmodeModel, child)=>
+                                          playmodeModel.mode == "shuffle" ? GestureDetector(
+                                              onTap: () {
+                                                //final ABmodel = context.read<AlbumModel>();
+                                                setState(() {
+                                                  shuffle = false;
+                                                  playmodeModel.mode = 'none';
+                                                });
+                                              },
+                                              child: Icon(
+                                                Icons.shuffle,
+                                                color: ABmodel.cardBackgroundColor.withRed(ABmodel.cardBackgroundColor.red + 80).withGreen(ABmodel.cardBackgroundColor.green + 80).withBlue(ABmodel.cardBackgroundColor.blue + 80),
+                                                size: 30,
+                                              )
+                                          )
+                                              :  GestureDetector(
+                                                  onTap: () {
+                                                    //final ABmodel = context.read<AlbumModel>();
+                                                    setState(() {
+                                                      shuffle = true;
+                                                      linear = false;
+                                                      repeat = false;
+                                                      playmodeModel.mode = 'shuffle';
+                                                    });
+                                                  },
+                                                  child: Icon(
+                                                    Icons.shuffle,
+                                                    color: Colors.white70,
+                                                    size: 30,
+                                                  )
+                                              )
+                                          ),
+                                        ),
+                                        SizedBox(width: 12,),
+                                        Consumer<PlayAudio>(
+                                          builder:((context, playmodeModel, child)=>
+                                          playmodeModel.mode == "repeat" ? GestureDetector(
+                                              onTap: () {
+                                                //final ABmodel = context.read<AlbumModel>();
+                                                setState(() {
+                                                  repeat = false;
+                                                  playmodeModel.mode = 'none';
+                                                });
+                                              },
+                                              child: Icon(
+                                                Icons.repeat,
+                                                color: ABmodel.cardBackgroundColor.withRed(ABmodel.cardBackgroundColor.red + 80).withGreen(ABmodel.cardBackgroundColor.green + 80).withBlue(ABmodel.cardBackgroundColor.blue + 80),
+                                                size: 30,
+                                              )
+                                          )
+                                              : GestureDetector(
+                                                  onTap: () {
+                                                    //final ABmodel = context.read<AlbumModel>();
+                                                    setState(() {
+                                                      shuffle = false;
+                                                      linear = false;
+                                                      repeat = true;
+
+                                                      playmodeModel.mode = 'repeat';
+                                                    });
+                                                  },
+                                                  child: Icon(
+                                                    Icons.repeat,
+                                                    color: Colors.white70,
+                                                    size: 30,
+                                                  )
+                                              )
+                                          ),
+                                        ),
+                                        //SizedBox(width: 20,)
+                                      ],
                                     ),
                                   ],
                                 )),
@@ -338,11 +456,11 @@ class _AlbumCollectionState extends State<AlbumCollection> {
 
                                   return GestureDetector(
                                     onTap: () async {
+                                      int check ;
                                       final audio = Provider.of<PlayAudio>(context, listen: false);
                                       final model = context.read<BottomPlayerModel>();
-
                                       List path_dur = await DownloadVideo().downloadVideo(songDetails['vId'].toString());  // Download the audio file, return a list with file location and duration
-
+                                      //ABmodel.playMode = 'shuffle';
                                       await _updateCard(
                                           songDetails['tUrl'].toString(),
                                           'playlist',
@@ -355,12 +473,18 @@ class _AlbumCollectionState extends State<AlbumCollection> {
                                           songDetails['tUrl'].toString(),
                                           path_dur[0],
                                           songDetails['tUrl'].toString());
-                                      await audio.initializePlaylistAudioPlayer(playlistDetails,index,path_dur);
+                                      if (repeat == false && shuffle == false && linear == false){
+                                        check = 0;
+                                      } else {
+                                        check = 1;
+                                      }
+                                      print("Check being passed: $check");
+                                      print("Mode being passed: """);
+                                      await audio.initializePlaylistAudioPlayer(playlistDetails,index,path_dur,check,'');
                                       await audio.playAudio();
 
                                       setState(()  {
                                         isPlayingList[index] = !isPlayingList[index];
-
                                         if (currentlyPlayingIndex != index) {
                                           if (currentlyPlayingIndex != -1) { // If a new item is clicked, this stops the currently playing item
                                             isPlayingList[currentlyPlayingIndex] = false;
@@ -571,7 +695,7 @@ class _AlbumCollectionState extends State<AlbumCollection> {
   }
 
   Future<void> _updateCard(String thumbnailUrl, String mode, String title, String author, int dur) async {
-    if(mode == 'playlist'){
+    if(mode == 'playlist' && _isMounted){
       PaletteGenerator paletteGenerator = await PaletteGenerator.fromImageProvider(NetworkImage(thumbnailUrl));
       final model = context.read<BottomPlayerModel>();
       //final box = await Hive.openBox('retain');
@@ -589,14 +713,3 @@ class _AlbumCollectionState extends State<AlbumCollection> {
     }
   }
 }
-
-/*if (mode == ""){
-      PaletteGenerator paletteGenerator = await PaletteGenerator.fromImageProvider(NetworkImage(thumbnailUrl));
-      final model = context.read<BottomPlayerModel>();
-      final box = await Hive.openBox('retain');
-      setState(() {
-        model.cardBackgroundColor = paletteGenerator.dominantColor!.color;
-        box.put('color', paletteGenerator.dominantColor!.color.toString());
-      });
-
-  } else */
