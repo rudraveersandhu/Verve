@@ -25,12 +25,14 @@ import 'package:flutter/material.dart';
 import 'package:palette_generator/palette_generator.dart';
 import 'package:verve/models/album.dart';
 import 'package:verve/screens/splash_screen.dart';
+import 'package:verve/services/download_video.dart';
 import 'package:verve/services/play_audio.dart';
 import 'package:verve/utilities/playlist_provider.dart';
 import 'package:hive_flutter/adapters.dart';
 import 'package:provider/provider.dart';
 import 'models/playlists.dart';
 import 'models/bottom_player.dart';
+
 
 Future<void> main() async {
   if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
@@ -98,7 +100,7 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme:
-            ColorScheme.fromSeed(seedColor: Colors.orange.shade900),
+            ColorScheme.fromSeed(seedColor: Colors.transparent),
         useMaterial3: true,
       ),
       home: const SplashScreen(),

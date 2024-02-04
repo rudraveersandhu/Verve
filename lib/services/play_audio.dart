@@ -44,12 +44,6 @@ class PlayAudio with ChangeNotifier {
 
   PlayAudio({required this.updateCard}) {
     audioPlayer.playerStateStream.listen((playerState) {
-      //print('Player state changed: $playerState');
-      //print('Duration: ${getDuration()} seconds');
-      //print('Current Position: ${getCurrentPosition()} seconds');
-      //print("Tracker: $tracker");
-      //print("Index: $strack");
-
       // Check for the condition to reset position
       if (tracker == 'single' &&  playerState.playing && playerState.processingState == ProcessingState.completed ) {
           print('Resetting player position to initial');
@@ -60,9 +54,7 @@ class PlayAudio with ChangeNotifier {
         print("hogaya khatam bsdk");
         print("current mode : $mode");
         stopAudio();
-        //audioPlayer.seek(Duration(seconds: 0));
         loadNextFromPlaylist(strack, playlist, mode);
-        //initializePlaylistAudioPlayer(playlist, strack+1,[]);
       }
     });
   }
@@ -126,6 +118,7 @@ class PlayAudio with ChangeNotifier {
     // None
     else if(mode == 'none'){
       audioPlayer.seek(Duration(seconds: 0));
+      playAudio();
     }
     // Repeat mode
     else if (mode == 'repeat'){

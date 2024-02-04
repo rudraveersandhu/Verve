@@ -21,7 +21,9 @@
 // *
 
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:hive_flutter/adapters.dart';
 import 'package:palette_generator/palette_generator.dart';
@@ -40,14 +42,33 @@ class MySongs extends StatefulWidget {
   State<MySongs> createState() => _MySongsState();
 }
 
-class _MySongsState extends State<MySongs> {
+class _MySongsState extends State<MySongs> with TickerProviderStateMixin,ChangeNotifier {
   String audpath = "";
   Color cardBackgroundColor = Colors.indigo;
+  late AnimationController _controller;
+  late Animation<double> _animation;
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    _controller = AnimationController(
+      vsync: this,
+      duration: Duration(milliseconds: 600),
+    );
+    _animation = Tween(begin: 0.0,end: 1.0).animate(_controller);
+    super.initState();
+  }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     accessPlaylist(widget.title);
+  }
+  @override
+  void dispose() {
+    // TODO: implement dispose
+    _controller.dispose();
+    super.dispose();
   }
 
 
@@ -72,7 +93,6 @@ class _MySongsState extends State<MySongs> {
         String audPath = song['audPath'];
         int duration = song['duration'].toInt();
 
-
         playlistDetails.add({
           'songTitle': songTitle,
           'songAuthor': songAuthor,
@@ -83,6 +103,7 @@ class _MySongsState extends State<MySongs> {
         });
       }
       return playlistDetails;
+
     } else {
       print('Playlist not found: $targetPlaylistName');
       return [];
@@ -91,6 +112,7 @@ class _MySongsState extends State<MySongs> {
 
   @override
   Widget build(BuildContext context) {
+    _controller.forward();
     final model = context.read<BottomPlayerModel>();
     final audio = Provider.of<PlayAudio>(context);
     return Scaffold(
@@ -170,11 +192,10 @@ class _MySongsState extends State<MySongs> {
               ),
               Expanded(
                 child: FutureBuilder<List<Map<String, Object>>>(
-
                   future: accessPlaylist(widget.title),
                   builder: (context, snapshot) {
                     if (snapshot.connectionState == ConnectionState.waiting) {
-                      return const CircularProgressIndicator();
+                      return Container();
                     } else if (snapshot.hasError) {
                       return Text('Error: ${snapshot.error}');
                     } else {
@@ -183,92 +204,138 @@ class _MySongsState extends State<MySongs> {
                         padding: EdgeInsets.zero,
                         itemCount: playlistDetails?.length,
                         itemBuilder: (context, index) {
-                          Map<String, Object>? songDetails = playlistDetails?[index];
+                          Map<String,
+                              Object>? songDetails = playlistDetails?[index];
+                          String imageURL = songDetails!['tUrl'].toString();
                           return Slidable(
-                            key: const ValueKey(0),
-                            endActionPane:  ActionPane(
-                              motion: ScrollMotion(),
-                              children: [
-                                SlidableAction(
-                                  onPressed: ((context){
-                                    setState(() {
-                                      deleteSongFromPlaylist(widget.title,songDetails!['songTitle'].toString());
-                                    });
-                                  }),
-                                  backgroundColor: Color(0xFFFE4A49),
-                                  foregroundColor: Colors.white,
-                                  icon: Icons.delete,
-                                  label: 'Delete',
-                                ),
-                              ],
-                            ),
-                            child: GestureDetector(
-                              onTap: () async {
-                                await _updateCardColor(songDetails['tUrl'].toString());
-                                updateRetain(songDetails['songTitle'].toString(), songDetails['songAuthor'].toString(), songDetails['tUrl'].toString(), songDetails['audPath'].toString(),songDetails['vId'].toString(), songDetails['tUrl'].toString());
-                                audio.initializeAudioPlayer(songDetails['audPath'].toString());
-                                audio.playAudio();
-                                setState(() {
-                                  model.currentDuration = (songDetails['duration'] as int?) ?? 0;
-                                  model.isCardVisible = true;
-                                  model.tUrl = songDetails['tUrl'].toString();
-                                  model.currentTitle = songDetails['songTitle'].toString();
-                                  model.currentAuthor = songDetails['songAuthor'].toString();
-                                  model.filePath = songDetails['audPath'].toString();
-                                  model.vId = songDetails['vId'].toString();
-                                  model.playButtonOn = true;
+                                    key: const ValueKey(0),
+                                    endActionPane: ActionPane(
+                                      motion: ScrollMotion(),
+                                      children: [
+                                        SlidableAction(
+                                          onPressed: ((context) {
+                                            setState(() {
+                                              deleteSongFromPlaylist(
+                                                  widget.title,
+                                                  songDetails!['songTitle']
+                                                      .toString());
+                                            });
+                                          }),
+                                          backgroundColor: Color(0xFFFE4A49),
+                                          foregroundColor: Colors.white,
+                                          icon: Icons.delete,
+                                          label: 'Delete',
+                                        ),
+                                      ],
+                                    ),
+                                    child: Consumer<BottomPlayerModel>(
+                                      builder: (context, value, child) =>
+                                    GestureDetector(
+                                      onTap: () async {
+                                        value.playButtonOn = true;
+                                        value.currentDuration =
+                                            (songDetails['duration'] as int?) ??
+                                                0;
+                                        value.isCardVisible = true;
+                                        value.tUrl =
+                                            songDetails['tUrl'].toString();
+                                        value.currentTitle =
+                                            songDetails['songTitle'].toString();
+                                        value.currentAuthor =
+                                            songDetails['songAuthor']
+                                                .toString();
+                                        value.filePath =
+                                            songDetails['audPath'].toString();
+                                        value.vId =
+                                            songDetails['vId'].toString();
 
-                                });
-                              },
-                              child: ListTile(
-                                leading: Container(
-                                width: 60.0,
-                                height: 60.0,
-                                decoration: BoxDecoration(
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withOpacity(0.8),
-                                      spreadRadius: 2,
-                                      blurRadius: 7,
-                                      offset: Offset(2, 3),
-                                    ),
-                                  ],
-                                  color: Colors.orange,
-                                  borderRadius: BorderRadius.circular(2.0),
-                                ),
-                                child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(2),
-                                  child: PhotoView(
-                                    imageProvider: NetworkImage(
-                                        songDetails!['tUrl'].toString()
-                                    ),
-                                    customSize: Size(120, 120),
-                                    enableRotation: true,
-                                    backgroundDecoration: BoxDecoration(
-                                      color: Theme.of(context).canvasColor,
+                                        String color = await getColorFromRetain();
+                                        updateRetain(
+                                            songDetails['songTitle'].toString(),
+                                            songDetails['songAuthor']
+                                                .toString(),
+                                            songDetails['tUrl'].toString(),
+                                            songDetails['audPath'].toString(),
+                                            songDetails['vId'].toString(),
+                                            songDetails['tUrl'].toString(),
+                                            color);
+                                        await _updateCardColor(songDetails['tUrl'].toString());
+                                        await audio.initializeAudioPlayer(songDetails['audPath'].toString());
+                                        await audio.playAudio();
+
+
+                                      },
+                                      child: ListTile(
+                                        leading: FadeTransition(
+                                          opacity: _animation,
+                                          child: Container(
+                                            width: 60.0,
+                                            height: 60.0,
+                                            decoration: BoxDecoration(
+                                              boxShadow: [
+                                                BoxShadow(
+                                                  color: Colors.black
+                                                      .withOpacity(0.8),
+                                                  spreadRadius: 2,
+                                                  blurRadius: 7,
+                                                  offset: Offset(2, 3),
+                                                ),
+                                              ],
+                                              color: Colors.orange,
+                                              borderRadius: BorderRadius
+                                                  .circular(2.0),
+                                            ),
+                                            child: ClipRRect(
+                                              borderRadius: BorderRadius
+                                                  .circular(2),
+                                              child: PhotoView(
+                                                imageProvider: CachedNetworkImageProvider(
+                                                  imageURL,
+                                                  cacheManager: CacheManager(
+                                                    Config(
+                                                      'verve',
+                                                      stalePeriod: Duration(
+                                                          days: 7),
+
+                                                    ),
+                                                  ),
+                                                ),
+                                                customSize: Size(120, 120),
+                                                enableRotation: true,
+                                                gaplessPlayback: true,
+                                                backgroundDecoration: BoxDecoration(
+                                                  color: Theme
+                                                      .of(context)
+                                                      .canvasColor,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                        title: Text(
+                                          songDetails['songTitle'].toString(),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w500,
+                                          ),),
+                                        subtitle: Text(
+                                          '${songDetails['songAuthor']}',
+                                          style: const TextStyle(
+                                            color: Colors.grey,
+                                            fontSize: 13,
+                                            //fontWeight: FontWeight.w700,
+                                          ),),
+
+                                      ),
                                     ),
                                   ),
-                                ),
-                              ),
-                                title: Text(songDetails['songTitle'].toString(),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w500,
-                                  ),),
-                                subtitle: Text('${songDetails['songAuthor']}',
-                                  style: const TextStyle(
-                                    color: Colors.grey,
-                                    fontSize: 13,
-                                    //fontWeight: FontWeight.w700,
-                                  ),),
-
-                              ),
-                            ),
                           );
-                        },
+
+
+                        }
                       );
                     }
                   },
@@ -281,15 +348,51 @@ class _MySongsState extends State<MySongs> {
   }
   Future<void> _updateCardColor(String thumbnailUrl) async {
     final model = context.read<BottomPlayerModel>();
+    try{
+      PaletteGenerator paletteGenerator =await PaletteGenerator.fromImageProvider(CachedNetworkImageProvider(
+        thumbnailUrl,
+        cacheManager: CacheManager(
+          Config(
+            'verve',
+            stalePeriod: Duration(days: 7),
+          ),
+        ),
+      ));
+      final box = await Hive.openBox('retain');
 
-    PaletteGenerator paletteGenerator =
-    await PaletteGenerator.fromImageProvider(NetworkImage(thumbnailUrl));
+      setState(() {
+        model.cardBackgroundColor = paletteGenerator.dominantColor!.color;
+        box.put('color', model.cardBackgroundColor.toString());
+      });
+    }catch(e){
+      print(e);
+      setState(() {
+        model.cardBackgroundColor = Colors.grey.shade800;
+      });
+
+    }
+
+  }
+
+  Future<String> getColorFromRetain() async {
     final box = await Hive.openBox('retain');
+    final model = context.read<BottomPlayerModel>();
+    String color = await box.get('color');
+    Color col = convertStringToColor(color);
 
     setState(() {
-      model.cardBackgroundColor = paletteGenerator.dominantColor!.color;
-      box.put('color', model.cardBackgroundColor.toString());
+      model.cardBackgroundColor = col;
     });
+
+    return col.toString();
+
+  }
+
+  Color convertStringToColor(String colorString) {
+    String hexString = colorString.replaceAll("Color(", "").replaceAll(")", "").replaceAll("0x", "");
+    int hexValue = int.parse(hexString, radix: 16);
+    Color color = Color(hexValue);
+    return color;
   }
 
   Future<void> deleteSongFromPlaylist(String playlistName, String songName) async {
@@ -321,7 +424,7 @@ class _MySongsState extends State<MySongs> {
     await box.close();
   }
 
-  void updateRetain(String songTitle, String artist, String thumb, String audPath, String vId, String tempUrl) async {
+  void updateRetain(String songTitle, String artist, String thumb, String audPath, String vId, String tempUrl, String color) async {
     final box = await Hive.openBox('retain');
     box.put('song', songTitle);
     box.put('author', artist);
@@ -329,6 +432,8 @@ class _MySongsState extends State<MySongs> {
     box.put('audPath', audPath);
     box.put('vId', vId);
     box.put('tempUrl', tempUrl);
+    box.put('color', color);
+
 
   }
 }

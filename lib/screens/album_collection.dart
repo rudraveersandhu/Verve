@@ -1,13 +1,17 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/adapters.dart';
 import 'package:palette_generator/palette_generator.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:provider/provider.dart';
+import 'package:youtube_explode_dart/youtube_explode_dart.dart';
 import '../models/album.dart';
 import '../models/bottom_player.dart';
+import '../models/playlists.dart';
 import '../services/download_video.dart';
 import '../services/play_audio.dart';
+import '../utilities/playlist_provider.dart';
 
 class AlbumCollection extends StatefulWidget {
   const AlbumCollection({super.key});
@@ -16,12 +20,18 @@ class AlbumCollection extends StatefulWidget {
   State<AlbumCollection> createState() => _AlbumCollectionState();
 }
 
-class _AlbumCollectionState extends State<AlbumCollection> {
+class _AlbumCollectionState extends State<AlbumCollection> with TickerProviderStateMixin {
   final ScrollController _controller1 = ScrollController();
   final ScrollController _controller2 = ScrollController();
+  late AnimationController _controller;
+  late Animation<double> _animation;
+  late List<bool> isInPlaylist ;
+  List<Future<bool>> futures = [];
+  int currentlydownloadingIndex = -1;
   bool track1 = false;
   late List<bool> isPlayingList ;
   int currentlyPlayingIndex = -1;
+  int check = 0;
   bool _isMounted = false;
   bool linear = false;
   bool shuffle = false;
@@ -32,38 +42,80 @@ class _AlbumCollectionState extends State<AlbumCollection> {
     //final extentAfter2 = _controller2.position.extentAfter;
     _controller1.jumpTo(_controller2.offset);
     track1 = true;
-
   }
 
   @override
   void initState() {
-    // TODO: implement initState
     _isMounted = true;
+    _controller = AnimationController(
+      vsync: this,
+      duration: Duration(milliseconds: 600),
+    );
+    _animation = Tween(begin: 0.0,end: 1.0).animate(_controller);
     final ABmodel = Provider.of<AlbumModel>(context, listen: false);
     isPlayingList = List.generate(ABmodel.playlistLength , (index) => false);
     print("Printing playlist detains from album collection : ${ABmodel.playlistLength}");
-    //_controller1.addListener(_onScrollEvent);
     _controller2.addListener(_onScrollEvent);
-    /*_controller2.addListener(() {
-      _controller1.jumpTo(_controller2.offset);
-      print(_controller1.position);
-      print(_controller2.position);
-    });*/
-
     super.initState();
   }
 
+  fetchData(playlistDetails) async {
+    isInPlaylist = List.generate(playlistDetails!.length, (index) => false);
+    for (int i = 0; i < playlistDetails.length; i++) {
+      futures.add(checkInPlaylist('My Songs', playlistDetails[i]['vId'].toString()));
+    }
+    List<bool> results = await Future.wait(futures);
+    print(results);
+
+    setState(() {
+      isInPlaylist = results;
+      check = 3;
+    });
+  }
+
+
+  Future<bool> checkInPlaylist(String targetPlaylistName, String id) async {
+    final box = await Hive.openBox('playlists');
+    List<dynamic> storedPlaylists = box.get('playlists', defaultValue: []);
+
+    var targetPlaylist = storedPlaylists.firstWhere(
+          (playlist) => playlist['name'] == targetPlaylistName,
+      orElse: () => <String, Object>{},
+    );
+
+    if (targetPlaylist != null) {
+      List<dynamic> songs = targetPlaylist['songs'];
+
+      for (var song in songs) {
+        String vId = song['vId'];
+        //print("dekh bhai : $vId : ${song['vId']}");
+
+        if (vId == id) {
+          //print('ID found in the playlist: $id');
+          return true;
+        }
+      }
+      //print('ID not found in the playlist: $id');
+      return false;
+    } else {
+      //print('Playlist not found: $targetPlaylistName');
+      return false;
+    }
+  }
+
+
   @override
   void dispose() {
-    // TODO: implement dispose
     _isMounted = false;
     _controller1.dispose();
     _controller2.dispose();
+    _controller.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    _controller.forward();
     final ABmodel = Provider.of<AlbumModel>(context, listen: false);
     final model = context.read<BottomPlayerModel>();
     return Container(
@@ -130,24 +182,40 @@ class _AlbumCollectionState extends State<AlbumCollection> {
                                       children: [
                                         Row(
                                           children: [
-                                            Container(
-                                              height: 100,
-                                              width: 100,
-                                              child: ClipRRect(
-                                                borderRadius: BorderRadius.only(
-                                                    bottomRight: Radius.zero,
-                                                    topLeft:
-                                                        Radius.circular(15)),
-                                                child: PhotoView(
-                                                  imageProvider:
-                                                      NetworkImage(ABmodel.ab1),
-                                                  customSize: Size(180, 180),
-                                                  enableRotation: true,
-                                                  backgroundDecoration:
-                                                      BoxDecoration(
-                                                    color: Theme.of(context)
-                                                        .canvasColor,
+                                            FadeTransition(
+                                              opacity: _animation,
+                                              child: Container(
+                                                height: 100,
+                                                width: 100,
+                                                child: ClipRRect(
+                                                  borderRadius: BorderRadius.only(
+                                                      bottomRight: Radius.zero,
+                                                      topLeft:
+                                                          Radius.circular(15)),
+                                                  child: PhotoView(
+                                                    imageProvider: CachedNetworkImageProvider(
+                                                      ABmodel.ab1,
+                                                    ),
+                                                    customSize: Size(180, 180),
+                                                    enableRotation: true,
+                                                    gaplessPlayback: true,
+                                                    backgroundDecoration: BoxDecoration(
+                                                      color: Theme.of(context).canvasColor,
+                                                    ),
                                                   ),
+                                                  /*
+                                                  PhotoView(
+                                                    imageProvider: CachedNetworkImageProvider(
+                                                      ABmodel.ab1,
+
+                                                    ),
+                                                    customSize: Size(180, 180),
+                                                    enableRotation: true,
+                                                    gaplessPlayback: true,
+                                                    backgroundDecoration: BoxDecoration(
+                                                      color: Theme.of(context).canvasColor,
+                                                    ),
+                                                  ),*/
                                                 ),
                                               ),
                                             ),
@@ -155,24 +223,27 @@ class _AlbumCollectionState extends State<AlbumCollection> {
                                               height: 100,
                                               width: 3,
                                             ),
-                                            Container(
-                                              height: 100,
-                                              width: 100,
-                                              child: ClipRRect(
-                                                borderRadius: BorderRadius.only(
-                                                    bottomRight: Radius.zero,
-                                                    topRight:
-                                                        Radius.circular(15),
-                                                    bottomLeft: Radius.zero),
-                                                child: PhotoView(
-                                                  imageProvider:
-                                                      NetworkImage(ABmodel.ab2),
-                                                  customSize: Size(180, 180),
-                                                  enableRotation: true,
-                                                  backgroundDecoration:
-                                                      BoxDecoration(
-                                                    color: Theme.of(context)
-                                                        .canvasColor,
+                                            FadeTransition(
+                                              opacity: _animation,
+                                              child: Container(
+                                                height: 100,
+                                                width: 100,
+                                                child: ClipRRect(
+                                                  borderRadius: BorderRadius.only(
+                                                      bottomRight: Radius.zero,
+                                                      topRight:
+                                                          Radius.circular(15),
+                                                      bottomLeft: Radius.zero),
+                                                  child: PhotoView(
+                                                    imageProvider: CachedNetworkImageProvider(
+                                                      ABmodel.ab2,
+                                                    ),
+                                                    customSize: Size(180, 180),
+                                                    enableRotation: true,
+                                                    gaplessPlayback: true,
+                                                    backgroundDecoration: BoxDecoration(
+                                                      color: Theme.of(context).canvasColor,
+                                                    ),
                                                   ),
                                                 ),
                                               ),
@@ -185,25 +256,26 @@ class _AlbumCollectionState extends State<AlbumCollection> {
                                         ),
                                         Row(
                                           children: [
-                                            Container(
-                                              height: 100,
-                                              width: 100,
-                                              child: ClipRRect(
-                                                borderRadius: BorderRadius.only(
-                                                  bottomRight: Radius.zero,
-                                                  topRight: Radius.zero,
-                                                  bottomLeft:
-                                                      Radius.circular(15),
-                                                ),
-                                                child: PhotoView(
-                                                  imageProvider:
-                                                      NetworkImage(ABmodel.ab3),
-                                                  customSize: Size(180, 180),
-                                                  enableRotation: true,
-                                                  backgroundDecoration:
-                                                      BoxDecoration(
-                                                    color: Theme.of(context)
-                                                        .canvasColor,
+                                            FadeTransition(
+                                              opacity: _animation,
+                                              child: Container(
+                                                height: 100,
+                                                width: 100,
+                                                child: ClipRRect(
+                                                  borderRadius: BorderRadius.only(
+                                                    bottomLeft:
+                                                        Radius.circular(15),
+                                                  ),
+                                                  child: PhotoView(
+                                                    imageProvider: CachedNetworkImageProvider(
+                                                      ABmodel.ab3,
+                                                    ),
+                                                    customSize: Size(180, 180),
+                                                    enableRotation: true,
+                                                    gaplessPlayback: true,
+                                                    backgroundDecoration: BoxDecoration(
+                                                      color: Theme.of(context).canvasColor,
+                                                    ),
                                                   ),
                                                 ),
                                               ),
@@ -212,21 +284,24 @@ class _AlbumCollectionState extends State<AlbumCollection> {
                                               height: 100,
                                               width: 3,
                                             ),
-                                            Container(
-                                              height: 100,
-                                              width: 100,
-                                              child: ClipRRect(
-                                                borderRadius:
-                                                    BorderRadius.circular(10),
-                                                child: PhotoView(
-                                                  imageProvider:
-                                                      NetworkImage(ABmodel.ab4),
-                                                  customSize: Size(180, 180),
-                                                  enableRotation: true,
-                                                  backgroundDecoration:
-                                                      BoxDecoration(
-                                                    color: Theme.of(context)
-                                                        .canvasColor,
+                                            FadeTransition(
+                                              opacity: _animation,
+                                              child: Container(
+                                                height: 100,
+                                                width: 100,
+                                                child: ClipRRect(
+                                                  borderRadius:
+                                                      BorderRadius.only(bottomRight: Radius.circular(10) ),
+                                                  child: PhotoView(
+                                                    imageProvider: CachedNetworkImageProvider(
+                                                      ABmodel.ab4,
+                                                    ),
+                                                    customSize: Size(180, 180),
+                                                    enableRotation: true,
+                                                    gaplessPlayback: true,
+                                                    backgroundDecoration: BoxDecoration(
+                                                      color: Theme.of(context).canvasColor,
+                                                    ),
                                                   ),
                                                 ),
                                               ),
@@ -432,7 +507,7 @@ class _AlbumCollectionState extends State<AlbumCollection> {
                         builder: (context, snapshot) {
                           if (snapshot.connectionState ==
                               ConnectionState.waiting) {
-                            return const CircularProgressIndicator();
+                            return Container();
                           } else if (snapshot.hasError) {
                             return Text(
                               'Error: ${snapshot.error}',
@@ -441,9 +516,14 @@ class _AlbumCollectionState extends State<AlbumCollection> {
                           } else {
                             List<Map<String, Object>>? playlistDetails =
                                 snapshot.data;
+
+
+
+
+
                             return Container(
                               height: MediaQuery.of(context).size.height,
-                              width: MediaQuery.of(context).size.width,
+                              //width: MediaQuery.of(context).size.width,
                               child: ListView.builder(
                                 controller: _controller2,
                                 shrinkWrap: true,
@@ -454,19 +534,22 @@ class _AlbumCollectionState extends State<AlbumCollection> {
                                   Map<String, Object>? songDetails =
                                       playlistDetails?[index];
 
+
                                   return GestureDetector(
                                     onTap: () async {
                                       int check ;
                                       final audio = Provider.of<PlayAudio>(context, listen: false);
-                                      final model = context.read<BottomPlayerModel>();
-                                      List path_dur = await DownloadVideo().downloadVideo(songDetails['vId'].toString());  // Download the audio file, return a list with file location and duration
+                                      //final model = context.read<BottomPlayerModel>();
+                                      final List path_dur = await DownloadVideo().downloadVideo(songDetails['vId'].toString());  // Download the audio file, return a list with file location and duration
                                       //ABmodel.playMode = 'shuffle';
                                       await _updateCard(
                                           songDetails['tUrl'].toString(),
                                           'playlist',
                                           songDetails['songTitle'].toString(),
                                           songDetails['songAuthor'].toString(),
-                                          path_dur[1].toInt());
+                                          path_dur,
+                                          songDetails['vId'].toString()
+                                      );
                                       updateRetain(
                                           songDetails['songTitle'].toString(),
                                           songDetails['songAuthor'].toString(),
@@ -478,8 +561,6 @@ class _AlbumCollectionState extends State<AlbumCollection> {
                                       } else {
                                         check = 1;
                                       }
-                                      print("Check being passed: $check");
-                                      print("Mode being passed: """);
                                       await audio.initializePlaylistAudioPlayer(playlistDetails,index,path_dur,check,'');
                                       await audio.playAudio();
 
@@ -492,7 +573,7 @@ class _AlbumCollectionState extends State<AlbumCollection> {
                                           currentlyPlayingIndex = index; // Updating the currently playing index
                                         }
                                         //ABmodel.currentDuration = (path_dur[1]).toInt();
-                                        model.filePath = path_dur[0];
+                                        //model.filePath = path_dur[0];
                                         //isPlayingList[index] = true;
                                       });
                                     },
@@ -500,44 +581,46 @@ class _AlbumCollectionState extends State<AlbumCollection> {
                                       padding: const EdgeInsets.only(bottom: 3.0),
                                       child: Container(
                                         height: 70,
-                                        width:
-                                            MediaQuery.of(context).size.width - 5,
+
                                         color: Colors.transparent,
                                         child: Row(
                                           children: [
                                             Padding(
                                               padding: const EdgeInsets.only(
                                                   left: 15.0),
-                                              child: Container(
-                                                width: 60.0,
-                                                height: 60.0,
-                                                decoration: BoxDecoration(
-                                                  boxShadow: [
-                                                    BoxShadow(
-                                                      color: Colors.black
-                                                          .withOpacity(0.8),
-                                                      spreadRadius: 2,
-                                                      blurRadius: 7,
-                                                      offset: Offset(2, 3),
-                                                    ),
-                                                  ],
-                                                  color: Colors.orange,
-                                                  borderRadius:
-                                                      BorderRadius.circular(2.0),
-                                                ),
-                                                child: ClipRRect(
-                                                  borderRadius:
-                                                      BorderRadius.circular(2),
-                                                  child: PhotoView(
-                                                    imageProvider: NetworkImage(
-                                                        songDetails!['tUrl']
-                                                            .toString()),
-                                                    customSize: Size(120, 120),
-                                                    enableRotation: true,
-                                                    backgroundDecoration:
-                                                        BoxDecoration(
-                                                      color: Theme.of(context)
-                                                          .canvasColor,
+                                              child: FadeTransition(
+                                                opacity: _animation,
+                                                child: Container(
+                                                  width: 60.0,
+                                                  height: 60.0,
+                                                  decoration: BoxDecoration(
+                                                    boxShadow: [
+                                                      BoxShadow(
+                                                        color: Colors.black
+                                                            .withOpacity(0.8),
+                                                        spreadRadius: 2,
+                                                        blurRadius: 7,
+                                                        offset: Offset(2, 3),
+                                                      ),
+                                                    ],
+                                                    color: Colors.orange,
+                                                    borderRadius:
+                                                        BorderRadius.circular(2.0),
+                                                  ),
+                                                  child: ClipRRect(
+                                                    borderRadius:
+                                                        BorderRadius.circular(2),
+                                                    child: PhotoView(
+                                                      imageProvider: CachedNetworkImageProvider(
+                                                        songDetails!['tUrl'].toString(),
+
+                                                      ),
+                                                      customSize: Size(120, 120),
+                                                      enableRotation: true,
+                                                      gaplessPlayback: true,
+                                                      backgroundDecoration: BoxDecoration(
+                                                        color: Theme.of(context).canvasColor,
+                                                      ),
                                                     ),
                                                   ),
                                                 ),
@@ -552,7 +635,7 @@ class _AlbumCollectionState extends State<AlbumCollection> {
                                                       right: 12
                                                   ),
                                                   child: Container(
-                                                    width: 220,
+                                                    width: 260,
                                                     child: Text(
                                                       songDetails['songTitle']
                                                           .toString(),
@@ -587,29 +670,96 @@ class _AlbumCollectionState extends State<AlbumCollection> {
                                                 ),
                                               ],
                                             ),
-                                            SizedBox(
-                                              width: 15,
-                                            ),
-                                            Builder(
-                                              builder: (context) {
-                                                return AnimatedSwitcher(
-                                                  duration: Duration(milliseconds: 500),
-                                                  child: isPlayingList[index] && model.playButtonOn
-                                                      ? Icon(CupertinoIcons.pause_solid, color: Colors.white, key: Key('pause'))
-                                                      : Icon(CupertinoIcons.play_arrow_solid,color: Colors.white, key: Key('play')),
-                                                  transitionBuilder: (child, animation) {
-                                                    return ScaleTransition(
-                                                      scale: animation,
-                                                      child: child,
-                                                    );
-                                                  },
-                                                );
-                                              }
-                                            ),
-                                            /*Icon(
-                                              isPlayingList[index] && model.playButtonOn ? CupertinoIcons.pause : CupertinoIcons.play_arrow_solid,
-                                              color: Colors.white,
+                                            SizedBox(width: 10,),
+                                            /*SizedBox(
+                                              width: 50,
+                                              height: 50,
+                                              child: GestureDetector(
+                                                onTap: () async {
+                                                  //isPlayingList[index] = !isPlayingList[index];
+                                                  if (currentlydownloadingIndex != index) {
+                                                    if (currentlydownloadingIndex != -1) {
+                                                      isPlayingList[currentlydownloadingIndex] = false;
+                                                    }
+                                                    currentlydownloadingIndex = index;
+                                                  }
+                                                  List path_dur = await DownloadVideo().downloadVideo(songDetails['vId'].toString());
+                                                  await addToPlaylist("My Songs", songDetails['songTitle'].toString(),songDetails['songAuthor'].toString(), songDetails['tUrl'].toString(), path_dur[0],songDetails['vId'].toString() ,songDetails['tUrl'].toString(), path_dur[1].toInt());
+                                                  await fetchData(playlistDetails);
+                                                  setState(() {
+                                                    print("Running fetch data final part");
+                                                    check=1;
+
+                                                  });
+                                                  ScaffoldMessenger.of(context).showSnackBar(
+                                                    SnackBar(
+                                                      content: Row(
+                                                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                                        children: [
+                                                          Text('Added to "My Songs" successfully !', style: TextStyle(fontSize: 12)),
+                                                          SizedBox(width: 10),
+                                                          ElevatedButton(
+                                                            onPressed: () {
+                                                              setState(() {
+                                                                //showPlaylistSelector();
+                                                              });
+                                                            },
+                                                            child: Container(
+                                                              width: 50,
+                                                              child: Text('Change', overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 12)),
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                      behavior: SnackBarBehavior.floating,
+                                                      shape: RoundedRectangleBorder(
+                                                        borderRadius: BorderRadius.circular(10.0),
+                                                      ),
+                                                      backgroundColor: Colors.orange.withAlpha(900),
+                                                      duration: Duration(seconds: 1),
+                                                    ),
+                                                  );
+                                                },
+                                                child: Builder(
+                                                    builder: (context) {
+                                                      print("Index $index: ${isInPlaylist[index]}");
+                                                      return AnimatedSwitcher(
+                                                        duration: Duration(milliseconds: 500),
+                                                        child: (isInPlaylist[index])
+                                                            ? Icon(CupertinoIcons.heart_fill, color: Colors.deepOrange, /*key: Key('${index}heart_filled')*/)
+                                                            : Icon(CupertinoIcons.heart, color: Colors.white, /*key: Key('heart')*/),
+                                                        transitionBuilder: (child, animation) {
+                                                          return ScaleTransition(
+                                                            scale: animation,
+                                                            child: child,
+                                                          );
+                                                        },
+                                                      );
+                                                    }
+                                                ),
+                                              ),
                                             ),*/
+                                            Padding(
+                                              padding: const EdgeInsets.only(bottom: 10.0),
+                                              child: Builder(
+                                                builder: (context) {
+                                                  return AnimatedSwitcher(
+                                                    duration: Duration(milliseconds: 500),
+                                                    child: isPlayingList[index] && model.playButtonOn
+                                                        ? Icon(CupertinoIcons.pause_solid, color: Colors.white, key: Key('pause'))
+                                                        : Icon(CupertinoIcons.play_arrow_solid,color: Colors.white, key: Key('play')),
+                                                    transitionBuilder: (child, animation) {
+                                                      return ScaleTransition(
+                                                        scale: animation,
+                                                        child: child,
+                                                      );
+                                                    },
+                                                  );
+                                                }
+                                              ),
+                                            ),
+
+
                                           ],
                                         ),
                                       ),
@@ -624,11 +774,62 @@ class _AlbumCollectionState extends State<AlbumCollection> {
                     ],
                   )),
                 ),
-              ))
+              )
+          )
         ],
       ),
     );
   }
+
+  Future<void> addToPlaylist(String playlistName, String songTitle,
+      String artist, String thumb, String audPath, String vId , String tempUrl,int dur) async {
+    var playlistProvider =
+    Provider.of<PlaylistProvider>(context, listen: false);
+    final nav = Provider.of<Playlists>(context, listen: false);
+    final box = await Hive.openBox('playlists');
+
+    List<dynamic> storedPlaylists = box.get('playlists', defaultValue: []);
+
+    var mySongsPlaylist = storedPlaylists.firstWhere(
+          (playlist) => playlist['name'] == playlistName,
+      orElse: () => {
+        'name': playlistName,
+        'songs': []
+      },
+    );
+
+    List<dynamic> songs = mySongsPlaylist['songs'];
+
+    bool isSongAlreadyPresent = songs.any((song) =>
+    song['songTitle'] == songTitle && song['songAuthor'] == artist);
+
+    if (isSongAlreadyPresent) {
+      print('Song is already present in $playlistName playlist.');
+    } else {
+      songs.add({
+        'songTitle': songTitle,
+        'songAuthor': artist,
+        'tUrl': tempUrl,
+        'vId': vId,
+        'audPath': audPath,
+        'thumbnail': thumb,
+        'duration': dur,
+      });
+
+      box.put('playlists', storedPlaylists);
+      await box.close();
+
+      setState(() {
+        if (!nav.playlist.contains(playlistName)) {
+          nav.playlist.add(playlistName);
+          playlistProvider.updatePlaylist(nav.playlist);
+        }
+      });
+
+      print('Song added to "My Songs" playlist successfully.');
+    }
+  }
+
 
   getDuration() async {
     var box = await Hive.openBox('duration');
@@ -672,6 +873,8 @@ class _AlbumCollectionState extends State<AlbumCollection> {
         });
       }
 
+
+
       return playlistDetails;
     } else {
       print('Playlist not found: $targetPlaylistName');
@@ -692,11 +895,14 @@ class _AlbumCollectionState extends State<AlbumCollection> {
     box.put('tUrl', thumb);
     box.put('audPath', audPath);
     box.put('tempUrl', tempUrl);
+    box.put('color', (model.cardBackgroundColor).toString());
+    print("color being stored in retain: ${(model.cardBackgroundColor).toString()}");
   }
 
-  Future<void> _updateCard(String thumbnailUrl, String mode, String title, String author, int dur) async {
+  Future<void> _updateCard(String thumbnailUrl, String mode, String title, String author, dur, String id ) async {
     if(mode == 'playlist' && _isMounted){
       PaletteGenerator paletteGenerator = await PaletteGenerator.fromImageProvider(NetworkImage(thumbnailUrl));
+
       final model = context.read<BottomPlayerModel>();
       //final box = await Hive.openBox('retain');
       print("automatic update sucessfull _____________________________________________________________");
@@ -707,7 +913,9 @@ class _AlbumCollectionState extends State<AlbumCollection> {
         model.tUrl = thumbnailUrl;
         model.playButtonOn = true;
         model.isCardVisible = true;
-        model.currentDuration = dur.toInt();
+        model.currentDuration = dur[1].toInt();
+        model.filePath = dur[0].toString();
+        model.vId = id;
         //box.put('color', paletteGenerator.dominantColor!.color.toString());
       });
     }

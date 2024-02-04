@@ -22,6 +22,7 @@
 
 import 'dart:math';
 import 'dart:ui';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/adapters.dart';
@@ -46,7 +47,7 @@ class StartScreen extends StatefulWidget {
   State<StartScreen> createState() => _StartScreenState();
 }
 
-class _StartScreenState extends State<StartScreen> {
+class _StartScreenState extends State<StartScreen> with TickerProviderStateMixin {
   bool isPressed = false;
   bool isBlurred = false;
   double opacity = 1.0;
@@ -57,6 +58,29 @@ class _StartScreenState extends State<StartScreen> {
   TextEditingController _nameController = TextEditingController();
   List<Video> playlistVideos = [];
   String name = "Guest";
+
+  late AnimationController _controller;
+  late Animation<double> _animation;
+
+  @override
+  void initState() {
+    _controller = AnimationController(
+      vsync: this,
+      duration: Duration(seconds: 1),
+    );
+    _animation = Tween(begin: 0.0,end: 1.0).animate(_controller);
+    fetchData();
+    super.initState();
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    _nameController.dispose();
+    _controller.dispose();
+    super.dispose();
+  }
+
 
   getName() async {
     final box = await Hive.openBox('User');
@@ -85,18 +109,6 @@ class _StartScreenState extends State<StartScreen> {
     box.put('tempUrl', tempUrl);
   }
 
-  @override
-  void dispose() {
-    _scrollController.dispose();
-    _nameController.dispose();
-    super.dispose();
-  }
-
-  @override
-  void initState() {
-    fetchData();
-    super.initState();
-  }
 
   getRandomNumber(int min, int max) {
     Random random = Random();
@@ -107,6 +119,7 @@ class _StartScreenState extends State<StartScreen> {
 
   @override
   Widget build(BuildContext context) {
+    _controller.forward();
     final nav = context.watch<Playlists>();
     final ABmodel = context.read<AlbumModel>();
     final model = context.read<BottomPlayerModel>();
@@ -986,7 +999,7 @@ class _StartScreenState extends State<StartScreen> {
                           builder: (context, snapshot) {
                             if (snapshot.connectionState ==
                                 ConnectionState.waiting) {
-                              return const CircularProgressIndicator();
+                              return  Container();
                             } else if (snapshot.hasError) {
                               return Text(
                                 'Error: ${snapshot.error}',
@@ -1010,39 +1023,34 @@ class _StartScreenState extends State<StartScreen> {
                                       children: [
                                         GestureDetector(
                                           onTap: () async {
-      
                                             await _updateAlbumBgColor('https://img.youtube.com/vi/${songDetails['vId'].toString()}/sddefault.jpg');
-      
                                             setState(() {
-      
-      
                                               ABmodel.ab1 = 'https://img.youtube.com/vi/${playlistDetails?[getRandomNumber(0, playlistDetails.length)]['vId']}/sddefault.jpg';
                                               ABmodel.ab2 = 'https://img.youtube.com/vi/${playlistDetails?[getRandomNumber(0, playlistDetails.length)]['vId']}/sddefault.jpg';
                                               ABmodel.ab3 = 'https://img.youtube.com/vi/${playlistDetails?[getRandomNumber(0, playlistDetails.length)]['vId']}/sddefault.jpg';
                                               ABmodel.ab4 = 'https://img.youtube.com/vi/${playlistDetails?[getRandomNumber(0, playlistDetails.length)]['vId']}/sddefault.jpg';
-      
                                               ABmodel.playlistName = 'Top10Indian';
                                               print("Start Screen: ${ playlistDetails!.length}");
                                               ABmodel.playlistLength = playlistDetails.length;
                                               ABmodel.albumName = "India's Top Trending";
       
-                                              ABmodel.currentTitle = songDetails['songTitle'].toString();
-                                              ABmodel.currentAuthor = songDetails['songAuthor'].toString();
+                                              //ABmodel.currentTitle = songDetails['songTitle'].toString();
+                                              //ABmodel.currentAuthor = songDetails['songAuthor'].toString();
       
-                                              ABmodel.vId = songDetails['vId'].toString();
-                                              ABmodel.about = songDetails['about'].toString();
-                                              ABmodel.tUrl = songDetails['tUrl'].toString();
+                                              //ABmodel.vId = songDetails['vId'].toString();
+                                              //ABmodel.about = songDetails['about'].toString();
+                                              //ABmodel.tUrl = songDetails['tUrl'].toString();
       
                                             });
       
-                                            updateRetain(
+                                            /*updateRetain(
                                                 songDetails['songTitle']
                                                     .toString(),
                                                 songDetails['songAuthor']
                                                     .toString(),
                                                 songDetails['tUrl'].toString(),
                                                 songDetails['vId'].toString(),
-                                                songDetails['tUrl'].toString());
+                                                songDetails['tUrl'].toString());*/
                                             PersistentNavBarNavigator
                                                 .pushNewScreen(
                                               context,
@@ -1053,27 +1061,30 @@ class _StartScreenState extends State<StartScreen> {
                                                       .cupertino,
                                             );
                                           },
-                                          child: Container(
-                                            width: 150.0,
-                                            height: 150.0,
-                                            decoration: BoxDecoration(
-                                              color: Colors.grey.shade900,
-                                              borderRadius:
-                                                  BorderRadius.circular(16.0),
-                                            ),
-                                            child: ClipRRect(
-                                              borderRadius:
-                                                  BorderRadius.circular(10),
-                                              child: PhotoView(
-                                                imageProvider: NetworkImage(
-                                                    songDetails!['tUrl']
-                                                        .toString()),
-                                                customSize: Size(280, 280),
-                                                enableRotation: true,
-                                                backgroundDecoration:
-                                                    BoxDecoration(
-                                                  color: Theme.of(context)
-                                                      .canvasColor,
+                                          child: FadeTransition(
+                                            opacity: _animation,
+                                            child: Container(
+                                              width: 150.0,
+                                              height: 150.0,
+                                              decoration: BoxDecoration(
+                                                //color: Colors.grey.shade900,
+                                                borderRadius:
+                                                    BorderRadius.circular(16.0),
+                                              ),
+                                              child: ClipRRect(
+                                                borderRadius:
+                                                    BorderRadius.circular(10),
+                                                child: PhotoView(
+                                                  imageProvider: CachedNetworkImageProvider(
+                                                    songDetails!['tUrl'].toString(),
+
+                                                  ),
+                                                  customSize: Size(280, 280),
+                                                  enableRotation: true,
+                                                  gaplessPlayback: true,
+                                                  backgroundDecoration: BoxDecoration(
+                                                    color: Theme.of(context).canvasColor,
+                                                  ),
                                                 ),
                                               ),
                                             ),
@@ -1152,7 +1163,7 @@ class _StartScreenState extends State<StartScreen> {
                           builder: (context, snapshot) {
                             if (snapshot.connectionState ==
                                 ConnectionState.waiting) {
-                              return const CircularProgressIndicator();
+                              return Container();
                             } else if (snapshot.hasError) {
                               return Text(
                                 'Error: ${snapshot.error}',
@@ -1204,27 +1215,30 @@ class _StartScreenState extends State<StartScreen> {
                                                       .cupertino,
                                             );
                                           },
-                                          child: Container(
-                                            width: 150.0,
-                                            height: 150.0,
-                                            decoration: BoxDecoration(
-                                              color: Colors.grey.shade900,
-                                              borderRadius:
-                                                  BorderRadius.circular(16.0),
-                                            ),
-                                            child: ClipRRect(
-                                              borderRadius:
-                                                  BorderRadius.circular(10),
-                                              child: PhotoView(
-                                                imageProvider: NetworkImage(
-                                                    songDetails!['tUrl']
-                                                        .toString()),
-                                                customSize: Size(280, 280),
-                                                enableRotation: true,
-                                                backgroundDecoration:
-                                                    BoxDecoration(
-                                                  color: Theme.of(context)
-                                                      .canvasColor,
+                                          child: FadeTransition(
+                                            opacity: _animation,
+                                            child: Container(
+                                              width: 150.0,
+                                              height: 150.0,
+                                              decoration: BoxDecoration(
+                                                color: Colors.grey.shade900,
+                                                borderRadius:
+                                                    BorderRadius.circular(16.0),
+                                              ),
+                                              child: ClipRRect(
+                                                borderRadius:
+                                                    BorderRadius.circular(10),
+                                                child: PhotoView(
+                                                  imageProvider: CachedNetworkImageProvider(
+                                                    songDetails!['tUrl'].toString(),
+
+                                                  ),
+                                                  customSize: Size(280, 280),
+                                                  enableRotation: true,
+                                                  gaplessPlayback: true,
+                                                  backgroundDecoration: BoxDecoration(
+                                                    color: Theme.of(context).canvasColor,
+                                                  ),
                                                 ),
                                               ),
                                             ),
@@ -1303,7 +1317,7 @@ class _StartScreenState extends State<StartScreen> {
                           builder: (context, snapshot) {
                             if (snapshot.connectionState ==
                                 ConnectionState.waiting) {
-                              return const CircularProgressIndicator();
+                              return Container();
                             } else if (snapshot.hasError) {
                               return Text(
                                 'Error: ${snapshot.error}',
@@ -1343,7 +1357,7 @@ class _StartScreenState extends State<StartScreen> {
                                                   "Top Trending Worldwide";
                                               ABmodel.playlistLength = playlistDetails!.length;
       
-                                              ABmodel.tUrl =
+                                              /*ABmodel.tUrl =
                                                   songDetails['tUrl'].toString();
                                               ABmodel.currentTitle =
                                                   songDetails['songTitle']
@@ -1354,16 +1368,16 @@ class _StartScreenState extends State<StartScreen> {
                                               ABmodel.vId =
                                                   songDetails['vId'].toString();
                                               ABmodel.about =
-                                                  songDetails['about'].toString();
+                                                  songDetails['about'].toString();*/
                                             });
-                                            updateRetain(
+                                            /*updateRetain(
                                                 songDetails['songTitle']
                                                     .toString(),
                                                 songDetails['songAuthor']
                                                     .toString(),
                                                 songDetails['tUrl'].toString(),
                                                 songDetails['vId'].toString(),
-                                                songDetails['tUrl'].toString());
+                                                songDetails['tUrl'].toString());*/
                                             PersistentNavBarNavigator
                                                 .pushNewScreen(
                                               context,
@@ -1374,27 +1388,30 @@ class _StartScreenState extends State<StartScreen> {
                                                       .cupertino,
                                             );
                                           },
-                                          child: Container(
-                                            width: 150.0,
-                                            height: 150.0,
-                                            decoration: BoxDecoration(
-                                              color: Colors.grey.shade900,
-                                              borderRadius:
-                                                  BorderRadius.circular(16.0),
-                                            ),
-                                            child: ClipRRect(
-                                              borderRadius:
-                                                  BorderRadius.circular(10),
-                                              child: PhotoView(
-                                                imageProvider: NetworkImage(
-                                                    songDetails!['tUrl']
-                                                        .toString()),
-                                                customSize: Size(280, 280),
-                                                enableRotation: true,
-                                                backgroundDecoration:
-                                                    BoxDecoration(
-                                                  color: Theme.of(context)
-                                                      .canvasColor,
+                                          child: FadeTransition(
+                                            opacity: _animation,
+                                            child: Container(
+                                              width: 150.0,
+                                              height: 150.0,
+                                              decoration: BoxDecoration(
+                                                color: Colors.grey.shade900,
+                                                borderRadius:
+                                                    BorderRadius.circular(16.0),
+                                              ),
+                                              child: ClipRRect(
+                                                borderRadius:
+                                                    BorderRadius.circular(10),
+                                                child: PhotoView(
+                                                  imageProvider: CachedNetworkImageProvider(
+                                                    songDetails!['tUrl'].toString(),
+
+                                                  ),
+                                                  customSize: Size(280, 280),
+                                                  enableRotation: true,
+                                                  gaplessPlayback: true,
+                                                  backgroundDecoration: BoxDecoration(
+                                                    color: Theme.of(context).canvasColor,
+                                                  ),
                                                 ),
                                               ),
                                             ),
@@ -1473,7 +1490,7 @@ class _StartScreenState extends State<StartScreen> {
                           builder: (context, snapshot) {
                             if (snapshot.connectionState ==
                                 ConnectionState.waiting) {
-                              return const CircularProgressIndicator();
+                              return Container();
                             } else if (snapshot.hasError) {
                               return Text(
                                 'Error: ${snapshot.error}',
@@ -1513,7 +1530,7 @@ class _StartScreenState extends State<StartScreen> {
                                                   "Romatic hits of all time";
                                               ABmodel.playlistLength = playlistDetails!.length;
       
-                                              ABmodel.tUrl =
+                                              /*ABmodel.tUrl =
                                                   songDetails['tUrl'].toString();
                                               ABmodel.currentTitle =
                                                   songDetails['songTitle']
@@ -1524,16 +1541,16 @@ class _StartScreenState extends State<StartScreen> {
                                               ABmodel.vId =
                                                   songDetails['vId'].toString();
                                               ABmodel.about =
-                                                  songDetails['about'].toString();
+                                                  songDetails['about'].toString();*/
                                             });
-                                            updateRetain(
+                                            /*updateRetain(
                                                 songDetails['songTitle']
                                                     .toString(),
                                                 songDetails['songAuthor']
                                                     .toString(),
                                                 songDetails['tUrl'].toString(),
                                                 songDetails['vId'].toString(),
-                                                songDetails['tUrl'].toString());
+                                                songDetails['tUrl'].toString());*/
                                             PersistentNavBarNavigator
                                                 .pushNewScreen(
                                               context,
@@ -1544,27 +1561,29 @@ class _StartScreenState extends State<StartScreen> {
                                                       .cupertino,
                                             );
                                           },
-                                          child: Container(
-                                            width: 150.0,
-                                            height: 150.0,
-                                            decoration: BoxDecoration(
-                                              color: Colors.grey.shade900,
-                                              borderRadius:
-                                                  BorderRadius.circular(16.0),
-                                            ),
-                                            child: ClipRRect(
-                                              borderRadius:
-                                                  BorderRadius.circular(10),
-                                              child: PhotoView(
-                                                imageProvider: NetworkImage(
-                                                    songDetails!['tUrl']
-                                                        .toString()),
-                                                customSize: Size(280, 280),
-                                                enableRotation: true,
-                                                backgroundDecoration:
-                                                    BoxDecoration(
-                                                  color: Theme.of(context)
-                                                      .canvasColor,
+                                          child: FadeTransition(
+                                            opacity: _animation,
+                                            child: Container(
+                                              width: 150.0,
+                                              height: 150.0,
+                                              decoration: BoxDecoration(
+                                                color: Colors.grey.shade900,
+                                                borderRadius:
+                                                    BorderRadius.circular(16.0),
+                                              ),
+                                              child: ClipRRect(
+                                                borderRadius:
+                                                    BorderRadius.circular(10),
+                                                child: PhotoView(
+                                                  imageProvider: CachedNetworkImageProvider(
+                                                    songDetails!['tUrl'].toString(),
+                                                  ),
+                                                  customSize: Size(280, 280),
+                                                  enableRotation: true,
+                                                  gaplessPlayback: true,
+                                                  backgroundDecoration: BoxDecoration(
+                                                    color: Theme.of(context).canvasColor,
+                                                  ),
                                                 ),
                                               ),
                                             ),

@@ -20,10 +20,7 @@
 // * Project Git: https://github.com/rudraveersandhu/Verve
 // *
 
-
-
 import 'dart:ui';
-
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/adapters.dart';
@@ -60,13 +57,13 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
   late List<bool> isPlayingList ;
   late List<bool> isInPlaylist ;
   bool isPlaylistSelectorVisible = false;
-  double _downloadProgress = 0.0;
-  bool showProgress = false;
-  //bool isInPlaylist = false;
+  late AnimationController _controller;
+  late Animation<double> _animation;
 
   @override
   void dispose() {
     _textEditingController.dispose();
+    _controller.dispose();
     super.dispose();
   }
 
@@ -80,7 +77,6 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
     List<bool> results = await Future.wait(futures);
 
     setState(() {
-      showProgress = true;
       isInPlaylist = results;
     });
   }
@@ -101,40 +97,13 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
     }
   }
 
-  void _startDownload(String id) async {
-    // Reset progress to 0 before starting download
-    setState(() {
-      _downloadProgress = 0.0;
-    });
-
-    // Call your download function
-    DownloadVideo downloadVideo = DownloadVideo();
-
-    try {
-      await downloadVideo.downloadVideoWithProgress(id, (double progress) {
-        // Update the progress in the UI
-        setState(() {
-          print(progress);
-          _downloadProgress = progress;
-          if(progress == 1.0){
-            showProgress = false;
-            _downloadProgress = 0.0;
-
-          }
-          });
-      });
-
-      // Download complete
-      print('Download complete');
-      print(showProgress);
-    } catch (e) {
-      // Handle download failure
-      print('Download failed');
-    }
-  }
-
   @override
   void initState() {
+    _controller = AnimationController(
+      vsync: this,
+      duration: Duration(milliseconds: 500),
+    );
+    _animation = Tween(begin: 0.0,end: 1.0).animate(_controller);
     super.initState();
   }
 
@@ -142,12 +111,14 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
   Widget build(BuildContext context) {
     //final model = context.read<BottomPlayerModel>();
     //final audio = Provider.of<PlayAudio>(context);
+    _controller.forward();
     return GestureDetector(
       onTap: () {
         _focusNode.unfocus();
       },
       child: Stack(
-        children: [Container(
+        children: [
+          Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topCenter,
@@ -265,11 +236,9 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
                                     //shrinkWrap: true,
                                     itemCount: _searchResults.length,
                                     itemBuilder: (context, index) {
-
                                       var vId = _searchResults[index].id;
                                       var thumbnailUrl = _searchResults[index].thumbnails.highResUrl ;
                                       var tempUrl = _searchResults[index].thumbnails.lowResUrl ;
-
                                       //isInPlaylist = checkInPlaylist('My Songs', vId.toString()) as List<bool>;
 
                                       return Padding(
@@ -301,56 +270,6 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
                                               model.tUrl = thumbnailUrl;
                                               model.filePath = path_dur[0];
                                             });
-
-                                            //await _updateCardColor(tempUrl);
-                                            //vId = vid.id.toString();
-                                            //List path_dur = await DownloadVideo().downloadVideo(vId, 'download');
-                                            //print(path_dur[0]);
-                                            //await audio.initializeAudioPlayer(path_dur[0],'download');
-                                            //await audio.playAudio();
-
-                                            //currentTitle = _searchResults[index].title;
-                                            //currentAuthor = _searchResults[index].author;
-                                            //updateRetain(currentTitle, currentAuthor, thumbnailUrl, path_dur, tempUrl);
-
-                                            //if (!isPlayingList[index]) { // Start playing the song
-
-                                              //model.playButtonOn = true;
-                                              //audio.stopAudio();
-                                              //audio.initializeAudioPlayer(path_dur[0],'download');
-                                              //audio.playAudio();
-                                              //_focusNode.unfocus();
-
-                                            //} else {  // Pause the song
-
-                                              //audio.pauseAudio();
-                                              //model.playButtonOn = false;
-                                              //print('Pausing song at index $index');
-
-                                            //}
-
-                                            //setState(() {
-                                              //ABmodel.currentDuration = path_dur[1];
-                                              //isPlayingList[index] = !isPlayingList[index]; // Toggle the play/pause state for the clicked item
-
-                                              //if (currentlyPlayingIndex != index) {
-                                                //if (currentlyPlayingIndex != -1) { // If a new item is clicked, this stops the currently playing item
-                                                  //isPlayingList[currentlyPlayingIndex] = false;
-                                                //}
-                                                //currentlyPlayingIndex = index; // Updating the currently playing index
-                                              //}
-
-                                              //model.isCardVisible = true;
-                                              //model.tUrl = thumbnailUrl;
-                                              //model.currentTitle = currentTitle;
-                                              //model.currentAuthor = currentAuthor;
-                                              //model.filePath = path_dur[0];
-                                              //model.isCardVisible = true;
-                                              //model.playButtonOn = isPlayingList[index];
-                                              //audio.initializeAudioPlayer(path_dur[0],'download');
-                                              //audio.playAudio();
-                                              //_focusNode.unfocus();
-                                            //});
                                           },
                                           child: Container(
                                             width: MediaQuery.of(context).size.width,
@@ -360,38 +279,41 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
                                                 Padding(
                                                   padding: const EdgeInsets.only(
                                                       left: 10.0),
-                                                  child: Container(
-                                                    width: 60.0,
-                                                    height: 60.0,
-                                                    decoration: BoxDecoration(
-                                                      boxShadow: [
-                                                        BoxShadow(
-                                                          color: Colors.black
-                                                              .withOpacity(0.8),
-                                                          spreadRadius: 2,
-                                                          blurRadius: 7,
-                                                          offset: Offset(2,
-                                                              3), // changes the shadow position
-                                                        ),
-                                                      ],
-                                                      color: Colors.orange,
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                              5.0),
-                                                    ),
-                                                    child: ClipRRect(
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                              5),
-                                                      child: PhotoView(
-                                                        imageProvider:
-                                                            NetworkImage(tempUrl),
-                                                        customSize: Size(110, 110),
-                                                        enableRotation: true,
-                                                        backgroundDecoration:
-                                                            BoxDecoration(
-                                                          color: Theme.of(context)
-                                                              .canvasColor,
+                                                  child: FadeTransition(
+                                                    opacity: _animation,
+                                                    child: Container(
+                                                      width: 60.0,
+                                                      height: 60.0,
+                                                      decoration: BoxDecoration(
+                                                        boxShadow: [
+                                                          BoxShadow(
+                                                            color: Colors.black
+                                                                .withOpacity(0.8),
+                                                            spreadRadius: 2,
+                                                            blurRadius: 7,
+                                                            offset: Offset(2,
+                                                                3), // changes the shadow position
+                                                          ),
+                                                        ],
+                                                        color: Colors.orange,
+                                                        borderRadius:
+                                                            BorderRadius.circular(
+                                                                5.0),
+                                                      ),
+                                                      child: ClipRRect(
+                                                        borderRadius:
+                                                            BorderRadius.circular(
+                                                                5),
+                                                        child: PhotoView(
+                                                          imageProvider:
+                                                              NetworkImage(tempUrl),
+                                                          customSize: Size(110, 110),
+                                                          enableRotation: true,
+                                                          backgroundDecoration:
+                                                              BoxDecoration(
+                                                            color: Theme.of(context)
+                                                                .canvasColor,
+                                                          ),
                                                         ),
                                                       ),
                                                     ),
@@ -440,50 +362,26 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
                                                     width: 90,
                                                     child: Stack(
                                                       children: [
-                                                      showProgress ? Positioned(
-                                                        right: 6.5,
-                                                        top: 22,
-                                                        child: isPlayingList[index] ? Container(
-                                                          width: 40,
-                                                          height: 40,
-                                                            child: CircularProgressIndicator(
-                                                              value: _downloadProgress,
-                                                              color: Colors.deepOrange,
-                                                            ),
-                                                        ): Container(),
-                                                      ) : Container(height: 20,width: 20),
                                                       Positioned(
                                                         right: 15,
                                                         top: 30,
                                                         child: GestureDetector(
                                                           // Like actions
                                                           onTap: () async {
-                                                             _startDownload(vId.toString());
                                                             isPlayingList[index] = !isPlayingList[index];
-
                                                             if (currentlydownloadingIndex != index) {
                                                               if (currentlydownloadingIndex != -1) {
                                                                 isPlayingList[currentlydownloadingIndex] = false;
                                                               }
                                                               currentlydownloadingIndex = index;
                                                             }
-
                                                             List path_dur = await DownloadVideo().downloadVideo(vId.toString());
-
-                                                            final model = Provider.of<BottomPlayerModel>(context, listen: false);
                                                             await addToPlaylist("My Songs", _searchResults[index].title,_searchResults[index].author, thumbnailUrl, path_dur[0],vId.toString() ,tempUrl, path_dur[1].toInt());
 
                                                             setState(() {
-                                                              //model.filePath = path_dur[0];
-                                                              //model.currentDuration = path_dur[1];
-                                                              //model.tUrl = thumbnailUrl;
                                                               print("Running fetch data final part");
                                                               fetchData(_searchResults);
                                                             });
-
-                                                            // Use the result of checkInPlaylist in a separate variable before using it inside AnimatedSwitcher
-                                                            //isInPlaylist = (await checkInPlaylist('My Songs', vId.toString())) as List<bool>;
-
                                                             ScaffoldMessenger.of(context).showSnackBar(
                                                               SnackBar(
                                                                 content: Row(
@@ -579,6 +477,7 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
       //print('Song is already present in "My Songs" playlist.');
       //print("BHai ye dekh ${songs[1]['songTitle']}: $songTitle");
     } else {
+
       songs.add({
         'songTitle': songTitle,
         'songAuthor': artist,

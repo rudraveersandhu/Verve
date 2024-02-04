@@ -23,7 +23,9 @@
 
 import 'dart:math';
 import 'dart:ui';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:hive_flutter/adapters.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:photo_view/photo_view.dart';
@@ -42,7 +44,7 @@ class Player extends StatefulWidget {
   State<Player> createState() => _PlayerState();
 }
 
-class _PlayerState extends State<Player> {
+class _PlayerState extends State<Player> with TickerProviderStateMixin{
   Duration duration = Duration.zero;
   Duration position = Duration.zero;
   bool isPlaylistSelectorVisible = false;
@@ -50,6 +52,9 @@ class _PlayerState extends State<Player> {
   bool linear = false;
   bool shuffle = false;
   bool repeat = false;
+
+  late AnimationController _controller;
+  late Animation<double> _animation;
 
   String formatSecondsToTime(int seconds) {
     int hours = seconds ~/ 3600;
@@ -59,6 +64,23 @@ class _PlayerState extends State<Player> {
     String formattedTime =
         '$hours:${remainingMinutes.toString().padLeft(2, '0')}:${remainingSeconds.toString().padLeft(2, '0')}';
     return formattedTime;
+  }
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    _controller = AnimationController(
+      vsync: this,
+      duration: Duration(milliseconds: 300),
+    );
+    _animation = Tween(begin: 0.0,end: 1.0).animate(_controller);
+    super.initState();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
   }
 
   @override
@@ -84,7 +106,7 @@ class _PlayerState extends State<Player> {
     final model = context.watch<BottomPlayerModel>();
     final audio = Provider.of<PlayAudio>(context);
     final ABmodel = context.read<AlbumModel>();
-
+    _controller.forward();
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
@@ -146,30 +168,40 @@ class _PlayerState extends State<Player> {
                 height: 140,
               ),
               Center(
-                child: Container(
-                  width: 330.0,
-                  height: 330.0,
-                  decoration: BoxDecoration(
+                child: FadeTransition(
+                  opacity: _animation,
+                  child: Container(
+                    width: 330.0,
+                    height: 330.0,
+                    decoration: BoxDecoration(
 
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.6),
-                        spreadRadius: 25,
-                        blurRadius: 85,
-                        offset: Offset(22, 22),
-                      ),
-                    ],
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(10),
-                    child: PhotoView(
-                      imageProvider: NetworkImage(
-                          model.tUrl
-                      ),
-                      customSize: Size(590, 590),
-                      enableRotation: true,
-                      backgroundDecoration: BoxDecoration(
-                        color: Theme.of(context).canvasColor,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.6),
+                          spreadRadius: 25,
+                          blurRadius: 85,
+                          offset: Offset(22, 22),
+                        ),
+                      ],
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(10),
+                      child: PhotoView(
+                        imageProvider: CachedNetworkImageProvider(
+                          cacheManager: CacheManager(
+                            Config(
+                              'verve',
+                              stalePeriod: Duration(days: 7),
+                            ),
+                          ),
+                          model.tUrl,
+                        ),
+                        customSize: Size(590, 590),
+                        enableRotation: true,
+                        gaplessPlayback: true,
+                        backgroundDecoration: BoxDecoration(
+                          color: Theme.of(context).canvasColor,
+                        ),
                       ),
                     ),
                   ),
@@ -206,6 +238,7 @@ class _PlayerState extends State<Player> {
                     padding: const EdgeInsets.only(right: 15.0),
                     child: GestureDetector(
                         onTap: () {
+                          print("adding to playlist: My Songs \n Item details: \n 1) Title : ${model.currentTitle} \n 2) Author: ${model.currentAuthor} \n 3) Filepath: ${model.filePath} \n 4) TUrl: ${model.tUrl} \n 5) Duration: ${model.currentDuration} \n 6) VID: ${model.vId}");
                           addToPlaylist(
                               "My Songs",
                               model.currentTitle,
@@ -215,6 +248,7 @@ class _PlayerState extends State<Player> {
                               model.tUrl,
                               model.vId,
                               model.currentDuration);
+
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
                               content: Row(
