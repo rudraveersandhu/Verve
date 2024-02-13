@@ -20,17 +20,15 @@
 // * Project Git: https://github.com/rudraveersandhu/Verve
 // *
 
-
-import 'dart:math';
 import 'dart:ui';
+import 'package:audioplayers/audioplayers.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:hive_flutter/adapters.dart';
-import 'package:just_audio/just_audio.dart';
+
 import 'package:photo_view/photo_view.dart';
 import 'package:provider/provider.dart';
-import 'package:verve/models/album.dart';
 import '../models/playlists.dart';
 import '../models/bottom_player.dart';
 import '../services/play_audio.dart';
@@ -45,8 +43,6 @@ class Player extends StatefulWidget {
 }
 
 class _PlayerState extends State<Player> with TickerProviderStateMixin{
-  Duration duration = Duration.zero;
-  Duration position = Duration.zero;
   bool isPlaylistSelectorVisible = false;
 
   bool linear = false;
@@ -55,6 +51,8 @@ class _PlayerState extends State<Player> with TickerProviderStateMixin{
 
   late AnimationController _controller;
   late Animation<double> _animation;
+
+  double _sliderValue = 0.0;
 
   String formatSecondsToTime(int seconds) {
     int hours = seconds ~/ 3600;
@@ -74,6 +72,7 @@ class _PlayerState extends State<Player> with TickerProviderStateMixin{
       duration: Duration(milliseconds: 300),
     );
     _animation = Tween(begin: 0.0,end: 1.0).animate(_controller);
+
     super.initState();
   }
 
@@ -84,28 +83,10 @@ class _PlayerState extends State<Player> with TickerProviderStateMixin{
   }
 
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    final audio = Provider.of<PlayAudio>(context);
-    audio.audioPlayer.positionStream.listen((positionValue) {
-      audio.audioPlayer.playerStateStream.listen((playerState) {
-      if (mounted) {
-        setState(() {
-          position = positionValue;
-        });
-      } else{
-      }
-      });
-    });
-  }
-
-
-
-  @override
   Widget build(BuildContext context) {
     final model = context.watch<BottomPlayerModel>();
     final audio = Provider.of<PlayAudio>(context);
-    final ABmodel = context.read<AlbumModel>();
+    //final ABmodel = context.read<AlbumModel>();
     _controller.forward();
     return Scaffold(
       extendBodyBehindAppBar: true,
@@ -163,6 +144,8 @@ class _PlayerState extends State<Player> with TickerProviderStateMixin{
             ),
           ),
           child: Column(
+            //mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               SizedBox(
                 height: 140,
@@ -208,32 +191,34 @@ class _PlayerState extends State<Player> with TickerProviderStateMixin{
                 ),
               ),
               SizedBox(height: 30),
-              Padding(
-                padding: const EdgeInsets.only(right: 50, left: 50),
-                child: Text(
-                  model.currentTitle,
-                  maxLines: 1,
-                  style: TextStyle(
-                    color: Colors.white.withAlpha(980),
-                    fontSize: 21,
-                    fontWeight: FontWeight.w700,
-                    overflow: TextOverflow.ellipsis,
+              Center(
+                child: Padding(
+                  padding: const EdgeInsets.only(right: 50, left: 50),
+                  child: Text(
+                    model.currentTitle,
+                    maxLines: 1,
+                    style: TextStyle(
+                      color: Colors.white.withAlpha(980),
+                      fontSize: 21,
+                      fontWeight: FontWeight.w700,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
                 ),
               ),
-              Text(
-                model.currentAuthor,
-                style: TextStyle(
-                    color: Colors.grey,
-                    fontSize: 17,
-                    fontWeight: FontWeight.w500),
+              Center(
+                child: Text(
+                  model.currentAuthor,
+                  style: TextStyle(
+                      color: Colors.grey,
+                      fontSize: 17,
+                      fontWeight: FontWeight.w500),
+                ),
               ),
               SizedBox(height:5),
               Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-
                   Padding(
                     padding: const EdgeInsets.only(right: 15.0),
                     child: GestureDetector(
@@ -295,41 +280,72 @@ class _PlayerState extends State<Player> with TickerProviderStateMixin{
                   ),
                 ],
               ),
-              Slider(
-                thumbColor: Colors.transparent,
-                activeColor: model.cardBackgroundColor.withAlpha(150),
-                secondaryActiveColor: Colors.amber,
-                value:position.inSeconds.toDouble() <= model.currentDuration.toDouble() ? position.inSeconds.toDouble() : 0,
-                min: 0,
-                max: model.currentDuration.toDouble(),
-                onChanged: (value) async {
-                  if(value < model.currentDuration.toDouble()){
-                    //print(duration.inSeconds.toDouble());
-                    final position = Duration(seconds: value.toInt());
-                    await audio.audioPlayer.seek(position);
+              StreamBuilder<int>(
+                stream: audio.positionStream,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return Slider(value: 0.0, onChanged: (double value) {  },thumbColor: Colors.transparent,); // Display a loading indicator
+                  } else if (snapshot.hasError) {
+                  return Text('Error: ${snapshot.error}'); // Display an error message
+                  } else if (snapshot.hasData && snapshot.data!.toDouble() <= model.currentDuration.toDouble()){
+                  // Data snapshot is ready
+                    _sliderValue = snapshot.data!.toDouble(); // Update slider value based on stream data
+                  } else {
+                    _sliderValue = 0.0;
                   }
-                },
 
+                  return SliderTheme(
+                    data: SliderTheme.of(context).copyWith(
+                      trackHeight: 2,
+                      activeTrackColor: Colors.white,
+                      thumbShape: SliderComponentShape.noThumb,
+                      inactiveTrackColor: model.cardBackgroundColor.withRed(model.cardBackgroundColor.red +20).withBlue(model.cardBackgroundColor.blue +20).withGreen(model.cardBackgroundColor.blue + 20),
+                    ),
+                    child: Slider(
+                      value: _sliderValue <= model.currentDuration.toDouble() ? _sliderValue : 0,
+                      min: 0,
+                      max: model.currentDuration.toDouble(),
+                      onChanged: (value)  {
+                        if(value < model.currentDuration.toDouble()){
+                          setState(() {
+                            _sliderValue = value;
+                            audio.seekAudio(value.toInt());
+                          });
+                        }
+                      },
+                    ),
+                  );
+                }
               ),
-              Padding(
-                padding: const EdgeInsets.only(
-                  left: 24,
-                  right: 24,
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      getTime(position.toString(), 7),
-                      style: TextStyle(
-                          color: Colors.grey, fontWeight: FontWeight.w500),
-                    ),
-                    Text(
-                      "${formatSecondsToTime(model.currentDuration)}",
-                      style: TextStyle(
-                          color: Colors.grey, fontWeight: FontWeight.w500),
-                    ),
-                  ],
+              Center(
+                child: Padding(
+                  padding: const EdgeInsets.only(
+                    left: 24,
+                    right: 24,
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      StreamBuilder<int>(
+                        stream: audio.positionStream,
+                        builder: (context, snapshot) {
+                          if (snapshot.hasData && snapshot.data!.toDouble() <= model.currentDuration.toDouble()) {
+                            _sliderValue = snapshot.data!.toDouble(); // Update slider value based on stream data
+                          }
+                          return Text(
+                            "${formatSecondsToTime(_sliderValue.toInt())}",
+                            style: TextStyle(
+                                color: Colors.grey, fontWeight: FontWeight.w500),
+                          );
+                        }
+                      ),
+                      Text(
+                        "${formatSecondsToTime(model.currentDuration)}",
+                        style: TextStyle(
+                            color: Colors.grey, fontWeight: FontWeight.w500),
+                      ),
+                    ],
+                  ),
                 ),
               ),
               SizedBox(
@@ -390,170 +406,197 @@ class _PlayerState extends State<Player> with TickerProviderStateMixin{
                 height: 20,
               ),
               Padding(
-                padding: const EdgeInsets.only(right: 10.0),
-                child: IntrinsicWidth(
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: model.cardBackgroundColor.withOpacity(.3),
-                      borderRadius: BorderRadius.circular(15)
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Consumer<PlayAudio>(
-                          builder:((context, playmodeModel, child)=>
-                          playmodeModel.mode == "linear" ? Padding(
-                            padding: const EdgeInsets.only(left: 20.0),
-                            child: GestureDetector(
-                                onTap: () {
-                                  //final ABmodel = Provider.of<AlbumModel>(context, listen: false);
-                                  setState(() {
-                                    linear = false;
-                                    playmodeModel.mode = 'none';
-                                  });
-                                },
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                      color: Colors.black45,
-                                      borderRadius: BorderRadius.all(Radius.circular(10))
-                                  ),
-                                  child: Padding(
-                                    padding: const EdgeInsets.only(left: 10.0,right: 5,top: 5,bottom: 5),
-                                    child: Icon(
-                                      Icons.playlist_play,
-                                      color: Colors.deepOrange,
-                                      size: 45,
-                                    ),
-                                  ),
-                                )
+                padding: const EdgeInsets.only(left: 10.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Consumer<PlayAudio>(
+                      builder:((context, playmodeModel, child)=>
+                      playmodeModel.mode == "linear" ? GestureDetector(
+                          onTap: () {
+                            //final ABmodel = Provider.of<AlbumModel>(context, listen: false);
+                            setState(() {
+                              linear = false;
+                              playmodeModel.mode = 'none';
+                            });
+                          },
+                          child: Container(
+                            decoration: BoxDecoration(
+                                color: Colors.white38,
+                                borderRadius: BorderRadius.all(Radius.circular(10)),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.white.withOpacity(0.3),
+                                  spreadRadius: 2,
+                                  blurRadius: 22,
+                                  offset: Offset(0, 0), // changes position of shadow
+                                ),
+                              ],
+
+                            ),
+                            child: Padding(
+                              padding: const EdgeInsets.only(left: 10.0,right: 5,top: 5,bottom: 5),
+                              child: Icon(
+                                Icons.playlist_play,
+                                color: Colors.white,
+                                size: 45,
+                              ),
                             ),
                           )
-                              : Padding(
-                            padding: const EdgeInsets.only(left: 20.0),
-                            child: GestureDetector(
-                                onTap: () {
-                                  //final ABmodel = context.read<AlbumModel>();
-                                  setState(() {
-                                    linear = true;
-                                    shuffle = false;
-                                    repeat = false;
-                                    playmodeModel.mode = 'linear';
-                                  });
-                                },
-                                child: Icon(
-                                  Icons.playlist_play,
-                                  color: Colors.white70,
-                                  size: 45,
-                                )
-                            ),
-                          )
-                          ),
-                        ),
-                        Consumer<PlayAudio>(
-                          builder:((context, playmodeModel, child)=>
-                          playmodeModel.mode == "shuffle" ? Padding(
-                            padding: const EdgeInsets.only(left: 20.0),
-                            child: GestureDetector(
-                                onTap: () {
-                                  //final ABmodel = context.read<AlbumModel>();
-                                  setState(() {
-                                    shuffle = false;
-                                    playmodeModel.mode = 'none';
-                                  });
-                                },
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                      color: Colors.black45,
-                                    borderRadius: BorderRadius.all(Radius.circular(10))
-                                  ),
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(10.0),
-                                    child: Icon(
-                                      Icons.shuffle,
-                                      color: Colors.deepOrange,
-                                      size: 35,
-                                    ),
-                                  ),
-                                )
-                            ),
-                          )
-                              :  Padding(
-                            padding: const EdgeInsets.only(left: 20.0),
-                            child: GestureDetector(
-                                onTap: () {
-                                  //final ABmodel = context.read<AlbumModel>();
-                                  setState(() {
-                                    shuffle = true;
-                                    linear = false;
-                                    repeat = false;
-                                    playmodeModel.mode = 'shuffle';
-                                  });
-                                },
-                                child: Icon(
-                                  Icons.shuffle,
-                                  color: Colors.white70,
-                                  size: 35,
-                                )
-                            ),
-                          )
-                          ),
-                            ),
-                        SizedBox(width: 4,),
-                        Consumer<PlayAudio>(
-                          builder:((context, playmodeModel, child)=>
-                          playmodeModel.mode == "repeat" ? Padding(
-                          padding: const EdgeInsets.only(left: 20.0),
-                          child: GestureDetector(
+                      )
+                          : GestureDetector(
                               onTap: () {
                                 //final ABmodel = context.read<AlbumModel>();
                                 setState(() {
+                                  linear = true;
+                                  shuffle = false;
                                   repeat = false;
-                                  playmodeModel.mode = 'none';
+                                  playmodeModel.mode = 'linear';
                                 });
                               },
                               child: Container(
                                 decoration: BoxDecoration(
-                                    color: Colors.black45,
+                                    color: Colors.white12,
                                     borderRadius: BorderRadius.all(Radius.circular(10))
                                 ),
                                 child: Padding(
-                                  padding: const EdgeInsets.all(10.0),
+                                  padding: const EdgeInsets.only(left: 10.0,right: 5,top: 5,bottom: 5),
                                   child: Icon(
-                                    Icons.repeat,
-                                    color: Colors.deepOrange,
+                                    Icons.playlist_play,
+                                    color: Colors.white70,
+                                    size: 45,
+                                  ),
+                                ),
+                              )
+                          )
+                      ),
+                    ),
+                    SizedBox(width: 10,),
+                    Consumer<PlayAudio>(
+                      builder:((context, playmodeModel, child)=>
+                      playmodeModel.mode == "shuffle" ? GestureDetector(
+                          onTap: () {
+                            //final ABmodel = context.read<AlbumModel>();
+                            setState(() {
+                              shuffle = false;
+                              playmodeModel.mode = 'none';
+                            });
+                          },
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: Colors.white38,
+                              borderRadius: BorderRadius.all(Radius.circular(10)),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.white.withOpacity(0.3),
+                                  spreadRadius: 2,
+                                  blurRadius: 22,
+                                  offset: Offset(0, 0), // changes position of shadow
+                                ),
+                              ],
+
+                            ),
+                            child: Padding(
+                              padding: const EdgeInsets.only(left: 10.0,right: 10,top: 10,bottom: 10),
+                              child: Icon(
+                                Icons.shuffle,
+                                color: Colors.white,
+                                size: 35,
+                              ),
+                            ),
+                          )
+                      )
+                          :  GestureDetector(
+                              onTap: () {
+                                //final ABmodel = context.read<AlbumModel>();
+                                setState(() {
+                                  shuffle = true;
+                                  linear = false;
+                                  repeat = false;
+                                  playmodeModel.mode = 'shuffle';
+                                });
+                              },
+                              child: Container(
+                                decoration: BoxDecoration(
+                                    color: Colors.white12,
+                                    borderRadius: BorderRadius.all(Radius.circular(10))
+                                ),
+                                child: Padding(
+                                  padding: const EdgeInsets.only(left: 10.0,right: 10,top: 10,bottom: 10),
+                                  child: Icon(
+                                    Icons.shuffle,
+                                    color: Colors.white70,
                                     size: 35,
                                   ),
                                 ),
                               )
-                          ),
-                        )
-                            : Padding(
-                          padding: const EdgeInsets.only(left: 20.0),
-                          child: GestureDetector(
-                              onTap: () {
-                                //final ABmodel = context.read<AlbumModel>();
-                                setState(() {
-                                  shuffle = false;
-                                  linear = false;
-                                  repeat = true;
+                          )
+                      ),
+                        ),
+                    SizedBox(width: 10),
+                    Consumer<PlayAudio>(
+                      builder:((context, playmodeModel, child)=>
+                      playmodeModel.mode == "repeat" ? GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              repeat = false;
+                              playmodeModel.mode = 'none';
+                            });
+                          },
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: Colors.white38,
+                              borderRadius: BorderRadius.all(Radius.circular(10)),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.white.withOpacity(0.3),
+                                  spreadRadius: 2,
+                                  blurRadius: 22,
+                                  offset: Offset(0, 0), // changes position of shadow
+                                ),
+                              ],
 
-                                  playmodeModel.mode = 'repeat';
-                                });
-                              },
+                            ),
+                            child: Padding(
+                              padding: const EdgeInsets.only(left: 10.0,right: 10,top: 10,bottom: 10),
                               child: Icon(
                                 Icons.repeat,
-                                color: Colors.white70,
+                                color: Colors.white,
                                 size: 35,
-                              )
-                          ),
+                              ),
+                            ),
+                          )
+                      )
+                        : GestureDetector(
+                            onTap: () {
+                              //final ABmodel = context.read<AlbumModel>();
+                              setState(() {
+                                shuffle = false;
+                                linear = false;
+                                repeat = true;
+                                playmodeModel.mode = 'repeat';
+                              });
+                            },
+                            child: Container(
+                              decoration: BoxDecoration(
+                                  color: Colors.white12,
+                                  borderRadius: BorderRadius.all(Radius.circular(10))
+                              ),
+                              child: Padding(
+                                padding: const EdgeInsets.only(left: 10.0,right: 10,top: 10,bottom: 10),
+                                child: Icon(
+                                  Icons.repeat,
+                                  color: Colors.white70,
+                                  size: 35,
+                                ),
+                              ),
+                            )
                         )
-                          ),
-                          ),
+                      ),
+                      ),
 
-                        SizedBox(width: 20,)
-                      ],
-                    ),
-                  ),
+                    SizedBox(width: 20,)
+                  ],
                 ),
               ),
             ],

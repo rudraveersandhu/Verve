@@ -517,10 +517,6 @@ class _AlbumCollectionState extends State<AlbumCollection> with TickerProviderSt
                             List<Map<String, Object>>? playlistDetails =
                                 snapshot.data;
 
-
-
-
-
                             return Container(
                               height: MediaQuery.of(context).size.height,
                               //width: MediaQuery.of(context).size.width,
@@ -534,7 +530,6 @@ class _AlbumCollectionState extends State<AlbumCollection> with TickerProviderSt
                                   Map<String, Object>? songDetails =
                                       playlistDetails?[index];
 
-
                                   return GestureDetector(
                                     onTap: () async {
                                       int check ;
@@ -542,20 +537,10 @@ class _AlbumCollectionState extends State<AlbumCollection> with TickerProviderSt
                                       //final model = context.read<BottomPlayerModel>();
                                       final List path_dur = await DownloadVideo().downloadVideo(songDetails['vId'].toString());  // Download the audio file, return a list with file location and duration
                                       //ABmodel.playMode = 'shuffle';
-                                      await _updateCard(
-                                          songDetails['tUrl'].toString(),
-                                          'playlist',
-                                          songDetails['songTitle'].toString(),
-                                          songDetails['songAuthor'].toString(),
-                                          path_dur,
-                                          songDetails['vId'].toString()
-                                      );
-                                      updateRetain(
-                                          songDetails['songTitle'].toString(),
-                                          songDetails['songAuthor'].toString(),
-                                          songDetails['tUrl'].toString(),
-                                          path_dur[0],
-                                          songDetails['tUrl'].toString());
+                                      await audio.updateCard(songDetails['tUrl'].toString(), 'playlist', songDetails['songTitle'].toString(), songDetails['songAuthor'].toString(), path_dur, songDetails['vId'].toString());
+
+                                      updateRetain(songDetails['songTitle'].toString(), songDetails['songAuthor'].toString(), songDetails['tUrl'].toString(), path_dur[0], songDetails['tUrl'].toString());
+
                                       if (repeat == false && shuffle == false && linear == false){
                                         check = 0;
                                       } else {
@@ -572,16 +557,12 @@ class _AlbumCollectionState extends State<AlbumCollection> with TickerProviderSt
                                           }
                                           currentlyPlayingIndex = index; // Updating the currently playing index
                                         }
-                                        //ABmodel.currentDuration = (path_dur[1]).toInt();
-                                        //model.filePath = path_dur[0];
-                                        //isPlayingList[index] = true;
                                       });
                                     },
                                     child: Padding(
                                       padding: const EdgeInsets.only(bottom: 3.0),
                                       child: Container(
                                         height: 70,
-
                                         color: Colors.transparent,
                                         child: Row(
                                           children: [
@@ -899,10 +880,9 @@ class _AlbumCollectionState extends State<AlbumCollection> with TickerProviderSt
     print("color being stored in retain: ${(model.cardBackgroundColor).toString()}");
   }
 
-  Future<void> _updateCard(String thumbnailUrl, String mode, String title, String author, dur, String id ) async {
+  /*Future<void> _updateCard(String thumbnailUrl, String mode, String title, String author, dur, String id ) async {
     if(mode == 'playlist' && _isMounted){
       PaletteGenerator paletteGenerator = await PaletteGenerator.fromImageProvider(NetworkImage(thumbnailUrl));
-
       final model = context.read<BottomPlayerModel>();
       //final box = await Hive.openBox('retain');
       print("automatic update sucessfull _____________________________________________________________");
@@ -919,5 +899,5 @@ class _AlbumCollectionState extends State<AlbumCollection> with TickerProviderSt
         //box.put('color', paletteGenerator.dominantColor!.color.toString());
       });
     }
-  }
+  }*/
 }

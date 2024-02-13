@@ -15,7 +15,11 @@
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>harmony</string>
+	<string>verve</string>
+	<key>UIBackgroundModes</key>
+     <array>
+     	<string>audio</string>
+     </array>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>

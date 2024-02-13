@@ -73,10 +73,7 @@ class _HomeScreenState extends State<HomeScreen> with ChangeNotifier, TickerProv
 
   @override
   Widget build(BuildContext context) {
-    final model = context.read<BottomPlayerModel>();
-    final audio = Provider.of<PlayAudio>(context);
     _acontroller.forward();
-
     return Stack(
       children: [
         PersistentTabView(
@@ -104,67 +101,15 @@ class _HomeScreenState extends State<HomeScreen> with ChangeNotifier, TickerProv
           navBarStyle: NavBarStyle.style12,
         ),
         Positioned(
-          bottom: MediaQuery.of(context).padding.bottom + kBottomNavigationBarHeight,
+          bottom: MediaQuery.of(context).padding.bottom + kBottomNavigationBarHeight - 2,
           child: Column(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
               Padding(
                 padding: const EdgeInsets.only(left: 3, right: 0),
-                child: Container(
-                  width: (MediaQuery.of(context).size.width * .985),
-                  color: Colors.transparent,
-                  child: model.isCardVisible
-                      ? GestureDetector(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        PageRouteBuilder(
-                          pageBuilder: (context, animation, secondaryAnimation) =>
-                              Player(color: model.cardBackgroundColor),
-                          transitionsBuilder: (context, animation, secondaryAnimation, child) {
-                            const begin = Offset(0.0, 1.0);
-                            const end = Offset.zero;
-                            const curve = Curves.decelerate;
-                            var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
-                            var offsetAnimation = animation.drive(tween);
-                            return SlideTransition(position: offsetAnimation, child: child);
-                          },
-                        ),
-                      );
-                    },
-                    child:  Builder(
-                      builder: (context) {
-                        return AnimatedContainer(
-                          duration: const Duration(milliseconds: 200),
-                          height: model.isCardVisible ? 70 : 0,
-                          decoration: BoxDecoration(
-                            color: model.cardBackgroundColor,
-                            borderRadius: const BorderRadius.only(
-                              topLeft: Radius.circular(10.0),
-                              topRight: Radius.circular(10.0),
-                              bottomLeft: Radius.circular(10.0),
-                              bottomRight: Radius.circular(10.0),
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                  color: Colors.black,
-                                  blurRadius: 15.0,
-                                  spreadRadius: 2.8,
-                                  offset: Offset(9,7)
-                              ),
-                            ],
-                          ),
-                          child: FadeTransition(
-                              opacity: _animation,
-                              child: BottomPlayer()),
-                        );
-                      }
-                    )
-                  )
-                      : Container(
-                    color: Colors.transparent,
-                  ),
-                ),
+                child: FadeTransition(
+                    opacity: _animation,
+                    child: BottomPlayer()),
               ),
             ],
           ),

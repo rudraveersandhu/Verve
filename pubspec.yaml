@@ -16,7 +16,7 @@ description: "The music project."
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 0.1.5+1
+version: 0.1.6+1
 
 environment:
   sdk: '>=3.2.0 <4.0.0'
@@ -34,7 +34,9 @@ dependencies:
   youtube_explode_dart: ^2.0.4
   palette_generator: ^0.3.3+3
   marquee: ^2.2.3
-  just_audio: ^0.9.36
+  audioplayers: ^5.2.1
+  #just_audio: ^0.9.36
+  #just_audio_background: ^0.0.1-beta.11
   audio_service: ^0.18.12
   path_provider: ^2.1.1
   provider: ^6.1.1

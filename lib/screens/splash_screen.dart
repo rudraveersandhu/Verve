@@ -274,11 +274,16 @@ class _SplashScreenState extends State<SplashScreen> {
 
     } else {
       updateCardColorFromHive();
+      String title = await box.get('song');
+      String author = await box.get('author');
+      String tUrl = await box.get('tUrl');
+      String filePath = await box.get('audPath');
+
       setState(() {
-        model.currentTitle = box.get('song');
-        model.currentAuthor = box.get('author');
-        model.tUrl = box.get('tUrl');
-        model.filePath = box.get('audPath');
+        model.currentTitle = title;
+        model.currentAuthor = author;
+        model.tUrl = tUrl;
+        model.filePath = filePath;
         model.playButtonOn = false;
         model.isCardVisible = true;
       });
@@ -288,7 +293,7 @@ class _SplashScreenState extends State<SplashScreen> {
 
   Future<void> setAudio() async {
     final box = await Hive.openBox('retain');
-    String audpath = box.get('audPath').toString();
+    String audpath = await box.get('audPath').toString();
     final audio = Provider.of<PlayAudio>(context, listen: false);
     await audio.initializeAudioPlayer(audpath);
   }

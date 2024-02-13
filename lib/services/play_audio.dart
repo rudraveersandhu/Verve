@@ -22,85 +22,90 @@
 // * Project Git: https://github.com/rudraveersandhu/Verve
 // *
 
+import 'dart:async';
 import 'dart:math';
-
-import 'package:flutter/cupertino.dart';
+import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/foundation.dart';
-import 'package:just_audio/just_audio.dart';
-
 import 'download_video.dart';
 
 class PlayAudio with ChangeNotifier {
+  final Function(String, String, String, String, List, String ) updateCard;
 
-  final Function(String, String, String, String, List  ) updateCard;
+  late StreamController<int> _positionController;
+  Stream<int> get positionStream => _positionController.stream;
 
-  final AudioPlayer audioPlayer = AudioPlayer();
+  AudioPlayer player = AudioPlayer();
   String tracker = '';
   int strack = 0;
   String playlistName = '' ;
   late int dur;
+  late String loc;
   late var playlist ;
   String mode='';
+  late var dur_in_hours;
+  int maxduration = 100;
+  int currentpos = 0;
+  String currentpostlabel = "00:00";
+
+  Duration currentPosition = Duration.zero;
 
   PlayAudio({required this.updateCard}) {
-    audioPlayer.playerStateStream.listen((playerState) {
+    _positionController = StreamController<int>.broadcast();
+      //print("Tracker: $tracker");
+      //print("Current player state: $PlayerState");
       // Check for the condition to reset position
-      if (tracker == 'single' &&  playerState.playing && playerState.processingState == ProcessingState.completed ) {
-          print('Resetting player position to initial');
-          audioPlayer.seek(Duration(seconds: 0));
-          playAudio();
-      }
-      if (playerState.playing && playerState.processingState == ProcessingState.completed && tracker == 'playlist' ){
-        print("hogaya khatam bsdk");
-        print("current mode : $mode");
-        stopAudio();
-        loadNextFromPlaylist(strack, playlist, mode);
-      }
-    });
-  }
 
-  Future<int> getDuration() async {
-    return audioPlayer.duration?.inSeconds ?? 0;
+      player.onPositionChanged.listen((Duration p) {
+        //currentPosition = Duration(seconds: p.inSeconds);
+        currentpos = p.inSeconds;
+        _positionController.add(currentpos);
+        //print("current position :$currentpos");
+      });
   }
 
   Future<void> initializeAudioPlayer(String filePath) async {
-    await audioPlayer.setFilePath(filePath);
+    tracker = "single";
+    loc = filePath;
+    player.setSource(DeviceFileSource(filePath));
     notifyListeners();
   }
 
   Future<void> initializePlaylistAudioPlayer(rplaylist, int index, List path_dur, int check, String pmode) async {
+
     if (check == 0 && pmode == ''){
       mode = 'linear';
+      print("- Mode set to linear");
     }
     tracker = 'playlist';
+    print("- Tracker set to playlist");
     playlist = rplaylist;
     strack = index;
-    //print(index);
-    //print(rplaylist[index]['songTitle']);
     String audpath = path_dur[0];
-    //print(audpath);
-    await audioPlayer.setFilePath(audpath);
+    loc = audpath;
+    
+    player.setSource(DeviceFileSource(audpath));
+    //await audioPlayer.setSourceDeviceFile(audpath);
     notifyListeners();
   }
 
   Future<void> loadNextFromPlaylist(int index,playlistDetails, String mode) async {
+    print("Loading next from playlist, the mode is: $mode");
 
     // Linear mode
     if(mode == 'linear'){
       index = index + 1;
       List path_dur = await DownloadVideo().downloadVideo(playlist[index]['vId'].toString());  // Download the audio file, return a list with file location and duration
-
       await updateCard(playlist[index]['tUrl'].toString(),
           'playlist',
           playlist[index]['songTitle'].toString(),
           playlist[index]['songAuthor'].toString(),
-          path_dur
+          path_dur,
+          playlist[index]['vId'].toString()
       );
       notifyListeners();
       await initializePlaylistAudioPlayer(playlistDetails,index,path_dur, 1,mode);
       await playAudio();
     }
-
     // Shuffle mode
     else if (mode == 'shuffle'){
       index = getRandomNumber(0, playlistDetails.length);
@@ -109,7 +114,8 @@ class PlayAudio with ChangeNotifier {
           'playlist',
           playlist[index]['songTitle'].toString(),
           playlist[index]['songAuthor'].toString(),
-          path_dur);
+          path_dur,
+          playlist[index]['vId'].toString());
       notifyListeners();
       await initializePlaylistAudioPlayer(playlistDetails,index,path_dur, 1,mode);
       await playAudio();
@@ -117,8 +123,8 @@ class PlayAudio with ChangeNotifier {
     }
     // None
     else if(mode == 'none'){
-      audioPlayer.seek(Duration(seconds: 0));
-      playAudio();
+      player.seek(Duration(seconds: 0));
+      player.play(DeviceFileSource(loc));
     }
     // Repeat mode
     else if (mode == 'repeat'){
@@ -127,7 +133,8 @@ class PlayAudio with ChangeNotifier {
           'playlist',
           playlist[index]['songTitle'].toString(),
           playlist[index]['songAuthor'].toString(),
-          path_dur);
+          path_dur,
+          playlist[index]['vId'].toString());
       notifyListeners();
       initializePlaylistAudioPlayer(playlistDetails,index,path_dur,1,mode);
       playAudio();
@@ -144,29 +151,38 @@ class PlayAudio with ChangeNotifier {
 
 
   int getCurrentPosition() {
-    return audioPlayer.position.inSeconds;
+    //return player.position.inSeconds;
+    return 5;
 
   }
 
   Future<void> playAudio() async {
-    getDuration();
-    await audioPlayer.play();
+    //getDuration();
+    await player.play(DeviceFileSource(loc));
+    //await audioPlayer.play(AssetSource(loc));
     notifyListeners();
   }
 
   Future<void> pauseAudio() async {
-    await audioPlayer.pause();
+    await player.pause();
+    notifyListeners();
+
+  }
+
+  Future<void> seekAudio(int position) async {
+    await player.seek(Duration(seconds: position));
     notifyListeners();
   }
 
   Future<void> stopAudio() async {
-    await audioPlayer.stop();
+    await player.stop();
     notifyListeners();
   }
 
   @override
   void dispose() {
-    audioPlayer.dispose();
+    player.dispose();
+    _positionController.close();
     super.dispose();
   }
 }

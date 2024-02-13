@@ -44,7 +44,7 @@ class DownloadVideo {
 
   Future<List> downloadVideo(String videoId) async {
     final appDocDir = await getApplicationDocumentsDirectory();
-    final filePath = '${appDocDir.path}/$videoId.mp3';
+    final filePath = '${appDocDir.path}/$videoId.m4a';
     var youtube = YoutubeExplode();
 
     try {
