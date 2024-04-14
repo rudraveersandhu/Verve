@@ -21,6 +21,7 @@
 // *
 
 
+import 'package:audio_service/audio_service.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
@@ -29,6 +30,8 @@ import 'package:hive_flutter/adapters.dart';
 import 'package:palette_generator/palette_generator.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:provider/provider.dart';
+import '../audio_player_handler.dart';
+import '../main.dart';
 import '../models/bottom_player.dart';
 import '../services/play_audio.dart';
 
@@ -48,6 +51,11 @@ class _MySongsState extends State<MySongs> with TickerProviderStateMixin,ChangeN
   late AnimationController _controller;
   late Animation<double> _animation;
 
+  Map<String, bool> playmap = {
+    "showCard": false,
+    "songPlay": false,
+  };
+
   @override
   void initState() {
     // TODO: implement initState
@@ -59,11 +67,7 @@ class _MySongsState extends State<MySongs> with TickerProviderStateMixin,ChangeN
     super.initState();
   }
 
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    accessPlaylist(widget.title);
-  }
+
   @override
   void dispose() {
     // TODO: implement dispose
@@ -113,8 +117,9 @@ class _MySongsState extends State<MySongs> with TickerProviderStateMixin,ChangeN
   @override
   Widget build(BuildContext context) {
     _controller.forward();
+
     final model = context.read<BottomPlayerModel>();
-    final audio = Provider.of<PlayAudio>(context);
+    //final audio = Provider.of<PlayAudio>(context);
     return Scaffold(
         body: Container(
           height: MediaQuery.of(context).size.height,
@@ -207,6 +212,7 @@ class _MySongsState extends State<MySongs> with TickerProviderStateMixin,ChangeN
                           Map<String,
                               Object>? songDetails = playlistDetails?[index];
                           String imageURL = songDetails!['tUrl'].toString();
+
                           return Slidable(
                                     key: const ValueKey(0),
                                     endActionPane: ActionPane(
@@ -260,8 +266,30 @@ class _MySongsState extends State<MySongs> with TickerProviderStateMixin,ChangeN
                                             songDetails['tUrl'].toString(),
                                             color);
                                         await _updateCardColor(songDetails['tUrl'].toString());
-                                        await audio.initializeAudioPlayer(songDetails['audPath'].toString());
-                                        await audio.playAudio();
+                                        //await audio.initializeAudioPlayer(songDetails['audPath'].toString());
+                                        //await audio.playAudio();
+                                        //String? color = await updateCardColor(tempUrl);
+                                        //model.currentDuration = path_dur[1].toInt();
+                                        MediaItem item = MediaItem(
+                                            id: songDetails['audPath'].toString(),
+                                            album: songDetails['songAuthor']
+                                                .toString(),
+                                            title: songDetails['songTitle'].toString(),
+                                            artist: songDetails['songAuthor'].toString(),
+                                            duration: Duration(seconds: (songDetails['duration'] as int?) ??
+                                                0),
+                                            artUri: Uri.parse(songDetails['tUrl'].toString()),
+                                            genre: color,
+                                            playable: true,
+                                            extras: playmap = {
+                                              "showCard": true,
+                                              "songPlay": true,
+                                            }
+                                        );
+
+                                        await AudioPlayerHandler().initializeAudioPlayer(songDetails['audPath'].toString());
+                                        audioHandler.updateMediaItem(item);
+                                        audioHandler.play();
 
 
                                       },

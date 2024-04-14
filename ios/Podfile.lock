@@ -11,18 +11,11 @@ PODS:
     - ffmpeg-kit-ios-https (= 6.0)
     - Flutter
   - Flutter (1.0.0)
-  - flutter_background_service_ios (0.0.3):
-    - Flutter
-  - flutter_local_notifications (0.0.1):
-    - Flutter
   - FMDB (2.7.5):
     - FMDB/standard (= 2.7.5)
   - FMDB/standard (2.7.5)
   - just_audio (0.0.1):
     - Flutter
-  - on_audio_query_ios (0.0.1):
-    - Flutter
-    - SwiftyBeaver
   - path_provider_foundation (0.0.1):
     - Flutter
     - FlutterMacOS
@@ -31,17 +24,13 @@ PODS:
   - sqflite (0.0.3):
     - Flutter
     - FMDB (>= 2.7.5)
-  - SwiftyBeaver (2.0.0)
 
 DEPENDENCIES:
   - audio_service (from `.symlinks/plugins/audio_service/ios`)
   - audio_session (from `.symlinks/plugins/audio_session/ios`)
   - ffmpeg_kit_flutter (from `.symlinks/plugins/ffmpeg_kit_flutter/ios`)
   - Flutter (from `Flutter`)
-  - flutter_background_service_ios (from `.symlinks/plugins/flutter_background_service_ios/ios`)
-  - flutter_local_notifications (from `.symlinks/plugins/flutter_local_notifications/ios`)
   - just_audio (from `.symlinks/plugins/just_audio/ios`)
-  - on_audio_query_ios (from `.symlinks/plugins/on_audio_query_ios/ios`)
   - path_provider_foundation (from `.symlinks/plugins/path_provider_foundation/darwin`)
   - permission_handler_apple (from `.symlinks/plugins/permission_handler_apple/ios`)
   - sqflite (from `.symlinks/plugins/sqflite/ios`)
@@ -50,7 +39,6 @@ SPEC REPOS:
   trunk:
     - ffmpeg-kit-ios-https
     - FMDB
-    - SwiftyBeaver
 
 EXTERNAL SOURCES:
   audio_service:
@@ -61,14 +49,8 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/ffmpeg_kit_flutter/ios"
   Flutter:
     :path: Flutter
-  flutter_background_service_ios:
-    :path: ".symlinks/plugins/flutter_background_service_ios/ios"
-  flutter_local_notifications:
-    :path: ".symlinks/plugins/flutter_local_notifications/ios"
   just_audio:
     :path: ".symlinks/plugins/just_audio/ios"
-  on_audio_query_ios:
-    :path: ".symlinks/plugins/on_audio_query_ios/ios"
   path_provider_foundation:
     :path: ".symlinks/plugins/path_provider_foundation/darwin"
   permission_handler_apple:
@@ -82,15 +64,11 @@ SPEC CHECKSUMS:
   ffmpeg-kit-ios-https: f9c838aa5400a6c5ba12324c6b798f52197ba354
   ffmpeg_kit_flutter: b4ca70cac3fc1d8ac14cdc660754b60870358732
   Flutter: e0871f40cf51350855a761d2e70bf5af5b9b5de7
-  flutter_background_service_ios: e30e0d3ee69e4cee66272d0c78eacd48c2e94aac
-  flutter_local_notifications: 4cde75091f6327eb8517fa068a0a5950212d2086
   FMDB: 2ce00b547f966261cd18927a3ddb07cb6f3db82a
   just_audio: baa7252489dbcf47a4c7cc9ca663e9661c99aafa
-  on_audio_query_ios: e5afb0d4b42cfa3e8762d8ec1953540cb4f02100
   path_provider_foundation: 29f094ae23ebbca9d3d0cec13889cd9060c0e943
   permission_handler_apple: e76247795d700c14ea09e3a2d8855d41ee80a2e6
   sqflite: 31f7eba61e3074736dff8807a9b41581e4f7f15a
-  SwiftyBeaver: 014b0c12065026b731bac80305294f27d63e27f6
 
 PODFILE CHECKSUM: 8c1ae4b388f925d22fa4e2a82708df56bdd09f85
 

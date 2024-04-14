@@ -21,14 +21,27 @@
 // *
 
 
+import 'dart:async';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:hive_flutter/adapters.dart';
+import 'package:palette_generator/palette_generator.dart';
 import 'package:persistent_bottom_nav_bar/persistent_tab_view.dart';
 import 'package:provider/provider.dart';
+import 'package:verve/screens/playlist_screen.dart';
+import 'package:verve/screens/premium_screen.dart';
+import 'package:verve/screens/search_screen.dart';
+import 'package:verve/screens/start_screen.dart';
+import 'package:verve/screens/yt_playlist_screen.dart';
+import 'package:youtube_explode_dart/youtube_explode_dart.dart';
+import '../models/album.dart';
+import '../models/bottom_player.dart';
+import '../models/playlist_model.dart';
 import '../models/playlists.dart';
 import '../utilities/playlist_provider.dart';
+import 'album_collection.dart';
 import 'my_songs.dart';
 import 'new_playlist.dart';
 
@@ -40,6 +53,18 @@ class LibraryScreen extends StatefulWidget {
 }
 
 class _LibraryScreenState extends State<LibraryScreen> {
+  PersistentTabController _controller = PersistentTabController(initialIndex: 0);
+  List<List<dynamic>> rows = [];
+  final StreamController<List<PlaylistModel>> _playlistVideosController =
+  StreamController<List<PlaylistModel>>();
+
+  @override
+  void dispose() {
+    // TODO: implement dispose
+    _controller.dispose();
+    _playlistVideosController.close();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -88,7 +113,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
                               size: 33,
                             ),
                             SizedBox(width: 12),
-                            GestureDetector(
+                            _controller.index == 0 ? GestureDetector(
                               onTap: () {
                                 Navigator.push(
                                   context,
@@ -116,11 +141,46 @@ class _LibraryScreenState extends State<LibraryScreen> {
                                     },
                                   ),
                                 );
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Row(
+                                      mainAxisAlignment:
+                                      MainAxisAlignment.spaceEvenly,
+                                      children: [
+                                        Center(
+                                          child: Text(
+                                            'Created playlist successfully!',
+                                            style: TextStyle(fontSize: 13,letterSpacing: 1.0,fontWeight: FontWeight.w400,
+                                                color: Colors.white),
+                                          ),
+                                        ),
+
+                                      ],
+                                    ),
+                                    behavior: SnackBarBehavior.floating,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius:
+                                      BorderRadius.circular(10.0),
+                                    ),
+                                    backgroundColor:
+                                    Colors.green.shade500.withAlpha(200),
+                                    duration: Duration(seconds: 3),
+                                  ),
+                                );
                               },
                               child: Icon(
                                 Icons.add,
                                 color: Colors.white,
                                 size: 43,
+                              ),
+                            ) : GestureDetector(
+                              onTap: () {
+                                _showPlaylistImporter();
+                              },
+                              child: Icon(
+                                CupertinoIcons.arrow_down_square,
+                                color: Colors.orange,
+                                size: 35,
                               ),
                             ),
                             SizedBox(width: 10),
@@ -131,35 +191,75 @@ class _LibraryScreenState extends State<LibraryScreen> {
                   ),
                 ),
               ),
-
-              Divider(
+              Container(
+                height: 2,
                 color: Colors.grey.shade700,
               ),
-
+              Container(
+                height: MediaQuery.of(context).size.height-255,
+                width: MediaQuery.of(context).size.width,
+                child: Column(
+                  children: [
+                    Container(
+                      height: 50,
+                      color: Colors.black,
+                      child: PersistentTabView(
+                        context,
+                        controller: _controller,
+                        screens: _buildScreens(),
+                        items: _navBarsItems(),
+                        confineInSafeArea: true,
+                        handleAndroidBackButtonPress: true,
+                        resizeToAvoidBottomInset: true,
+                        stateManagement: true,
+                        hideNavigationBarWhenKeyboardShows: true,
+                        popAllScreensOnTapOfSelectedTab: true,
+                        popActionScreens: PopActionScreensType.all,
+                        itemAnimationProperties: ItemAnimationProperties(
+                          duration: Duration(milliseconds: 200),
+                          curve: Curves.ease,
+                        ),
+                        screenTransitionAnimation: ScreenTransitionAnimation(
+                          animateTabTransition: true,
+                          curve: Curves.ease,
+                          duration: Duration(milliseconds: 200),
+                        ),
+                        navBarStyle: NavBarStyle.style12,
+                      ),
+                    ),
+                    Expanded(
+                      child: _buildScreens()[_controller.index], // Display current screen based on index
+                    ),
+                  ],
+                ),
+              ),
             ],
           ),
-          Container(
+          /*Container(
             child: Column(
               children: [
                 SizedBox(
                   height: MediaQuery.of(context).size.height - 355,
                   child: Consumer<PlaylistProvider>(
                     builder: (context, playlistProvider, child) {
+                      final model = context.read<BottomPlayerModel>();
+                      final ABmodel = context.watch<AlbumModel>();
+                      print(playlistProvider.playlist.length);
                       return ListView.builder(
                         padding: EdgeInsets.zero,
-                        itemCount: playlistProvider.playlist.length,
+                        itemCount: model.rows.length+2,
                         itemBuilder: (context, index) {
                           bool isMySongs = nav.playlist[index] == "My Songs";
-                          bool Trending = nav.playlist[index] == "Trending";
-                          bool Punjabi = nav.playlist[index] == "Punjabi";
-                          bool Top10Indian = nav.playlist[index] == "Top10Indian";
-                          bool EngRom = nav.playlist[index] == "EngRom";
                           bool isBlank = nav.playlist[index] == "blank";
+                          final video = model.rows[index == 0 || index == 1 ? 0 : index-2];
+                          print("Model rows: ${model.rows.length}");
 
                           if (!isBlank) {
                             IconData iconData = isMySongs
                                 ? CupertinoIcons.heart_fill
                                 : CupertinoIcons.music_albums_fill;
+                            print("Index: $index");
+
 
                             return Slidable(
                               endActionPane: ActionPane(
@@ -211,19 +311,45 @@ class _LibraryScreenState extends State<LibraryScreen> {
                               ),
                               child: Padding(
                                 padding: const EdgeInsets.only(left: 10.0),
-                                child: (!Trending && !Punjabi && !Top10Indian && !EngRom) ? ListTile(
-                                  onTap: () {
+                                child: ListTile(
+                                  onTap: () async {
+                                    await _updateAlbumBgColor(video[index].url);
                                     setState(() {
-                                      PersistentNavBarNavigator.pushNewScreen(
-                                        context,
-                                        screen: MySongs(
-                                            title: nav.playlist[index]),
-                                        withNavBar: true,
+                                      ABmodel.ab1 = video[0].url;
+                                      ABmodel.ab2 = video[1].url;
+                                      ABmodel.ab3 = video[2].url;
+                                      ABmodel.ab4 = video[3].url;
+                                      ABmodel.playlistName = 'Top10Indian';
+                                      //print("Start Screen: ${ playlistDetails!.length}");
+                                      ABmodel.playlistLength = model.rows.length;
+                                      ABmodel.albumName = "India's Top Trending";
 
-                                        pageTransitionAnimation: PageTransitionAnimation
-                                            .cupertino,
-                                      );
+                                      //ABmodel.currentTitle = songDetails['songTitle'].toString();
+                                      //ABmodel.currentAuthor = songDetails['songAuthor'].toString();
+
+                                      //ABmodel.vId = songDetails['vId'].toString();
+                                      //ABmodel.about = songDetails['about'].toString();
+                                      //ABmodel.tUrl = songDetails['tUrl'].toString();
+
                                     });
+
+                                    /*updateRetain(
+                                            songDetails['songTitle']
+                                                .toString(),
+                                            songDetails['songAuthor']
+                                                .toString(),
+                                            songDetails['tUrl'].toString(),
+                                            songDetails['vId'].toString(),
+                                            songDetails['tUrl'].toString());*/
+                                    PersistentNavBarNavigator
+                                        .pushNewScreen(
+                                      context,
+                                      screen: AlbumCollection(index),
+                                      withNavBar: true,
+                                      pageTransitionAnimation:
+                                      PageTransitionAnimation
+                                          .cupertino,
+                                    );
                                   },
                                   leading: Padding(
                                     padding: const EdgeInsets.only(right: 8.0),
@@ -240,7 +366,9 @@ class _LibraryScreenState extends State<LibraryScreen> {
                                       color: Colors.white,
                                       fontSize: 16,
                                       fontWeight: FontWeight.w600,
+
                                     ),
+                                    maxLines: 2,
                                   ),
                                   subtitle: const Text(
                                     'Playlist',
@@ -251,7 +379,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
                                       fontWeight: FontWeight.w600,
                                     ),
                                   ),
-                                ) : Container()
+                                ),
                               ),
                             );
                           } else {
@@ -264,10 +392,13 @@ class _LibraryScreenState extends State<LibraryScreen> {
                 ),
               ],
             ),
-          ),
+          ),*/
         ],
       ),
-    ));
+    ),
+
+
+    );
   }
 
   Future<void> deletePlaylist(String playlistName) async {
@@ -295,5 +426,228 @@ class _LibraryScreenState extends State<LibraryScreen> {
     }
 
     await box.close();
+  }
+  //////////////////////////////////////////////////////////////////
+
+  List<Widget> _buildScreens() {
+    return [
+      MyPlaylistsScreen(),
+      YouTubePlaylistsScreen(),
+
+    ];
+  }
+
+  void _showPlaylistImporter() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        String url = '';
+        return AlertDialog(
+          backgroundColor: Colors.orange.shade800,
+          title: Text(
+            'Import playlist',
+            style: TextStyle(color: Colors.white),
+          ),
+          content: TextField(
+            onChanged: (value) {
+              url = value;
+              //print("Url: $url");
+            },
+            decoration: InputDecoration(
+              labelText: 'Youtube playlist url',
+              labelStyle: TextStyle(color: Colors.white),
+            ),
+            style: TextStyle(color: Colors.white60),
+          ),
+          actions: [
+            GestureDetector(
+              onTap: () {
+                Navigator.of(context).pop();
+              },
+              child: Container(
+                child: Text(
+                  'Cancel',
+                  style: TextStyle(color: Colors.white),
+                ),
+              ),
+            ),
+            SizedBox(
+              width: 5,
+            ),
+            GestureDetector(
+              onTap: () {
+                importPlaylist(url);
+                Navigator.of(context).pop();
+              },
+              child: Container(
+                child: Text(
+                  'Import',
+                  style: TextStyle(color: Colors.white, fontSize: 14.8),
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  importPlaylist(String url) async {
+    Uri uri = Uri.parse(url);
+    List<String> playlistId = [];
+    setState(() {
+      playlistId.add(uri.queryParameters['list'].toString());
+    });
+    await fetchData(playlistId);
+  }
+
+  Future<void> fetchData(List<String> urls) async {
+
+    var yt = YoutubeExplode();
+    List<String> url = [];
+    final nav = Provider.of<PlaylistProvider>(context, listen: false);
+
+    //open box of saved playlist
+    final box = await Hive.openBox('savedPlaylist');
+
+    // call model to mutate value
+    final model = context.read<BottomPlayerModel>();
+
+    // get the list of saved playlist url from the box
+    List<String> savedURLS = await box.get('urls') ?? <String>[];
+    List<String> names = await box.get('names') ?? <String>[];
+
+    if (urls.length == 1) {
+      var playlist = await yt.playlists.get(urls[0]);
+      String playlistName = playlist.title;
+      savedURLS.add(urls[0]);
+      names.add(playlistName);
+      nav.youtube_playlists.add(playlistName);
+      await box.put('urls', savedURLS);
+      await box.put('names', names);
+
+    }
+    for (int i = 0; i < urls.length; i++) {
+
+      var playlist = await yt.playlists.get(urls[i]);
+      List<Video> videoList = await yt.playlists.getVideos(playlist.id).toList();
+
+      List<PlaylistModel> videoModels = await videoList.map((video) {
+        return PlaylistModel(
+          id: video.id.toString(),
+          title: video.title,
+          author: video.author,
+          url: video.thumbnails.highResUrl,
+        );
+      }).toList();
+
+      for (PlaylistModel playlistModel in videoModels) {
+        // Access the url property of each PlaylistModel object
+        nav.url.add(playlistModel.url);
+
+        print(url);
+        // Do something with the url...
+      }
+
+      _playlistVideosController.add(videoModels);
+      rows.add(videoModels);
+      setState(() {
+        model.rows = rows;
+      });
+      //print("Rows: $rows");
+    }
+    yt.close();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          mainAxisAlignment:
+          MainAxisAlignment.spaceEvenly,
+          children: [
+            Center(
+              child: Text(
+                'Imported playlist successfully!',
+                style: TextStyle(fontSize: 13,letterSpacing: 1.0,fontWeight: FontWeight.w400,
+                    color: Colors.white),
+              ),
+            ),
+
+          ],
+        ),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius:
+          BorderRadius.circular(10.0),
+        ),
+        backgroundColor:
+        Colors.green.shade500.withAlpha(200),
+        duration: Duration(seconds: 3),
+      ),
+    );
+  }
+
+  List<PersistentBottomNavBarItem> _navBarsItems() {
+    return [
+      PersistentBottomNavBarItem(
+        icon: GestureDetector(
+          onTap: (){
+            setState(() {
+              _controller.index = 0;
+            });
+          },
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Center(
+                  child: Text("My Playlists",
+                    style: TextStyle(
+                        color: Colors.black,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w500),
+                  ),
+              ),
+            ],
+          ),
+        ),
+        title: ("My Playlists"),
+        activeColorPrimary: CupertinoColors.activeOrange,
+        inactiveColorPrimary: CupertinoColors.systemGrey,
+
+      ),
+      PersistentBottomNavBarItem(
+        icon: GestureDetector(
+          onTap: (){
+            setState(() {
+              _controller.index = 1;
+            });
+
+          },
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Center(
+                child: Text("YouTube Playlists",
+                  style: TextStyle(
+                      color: Colors.black,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w500),
+                ),
+              ),
+            ],
+          ),
+        ),
+        title: ("YouTube Playlists"),
+        activeColorPrimary: CupertinoColors.activeOrange,
+        inactiveColorPrimary: CupertinoColors.systemGrey,
+      ),
+    ];
+  }
+  Future<void> _updateAlbumBgColor(String thumbnailUrl) async {
+    final ABmodel = context.read<AlbumModel>();
+    PaletteGenerator paletteGenerator =
+    await PaletteGenerator.fromImageProvider(NetworkImage(thumbnailUrl));
+
+    setState(() {
+      ABmodel.cardBackgroundColor = paletteGenerator.dominantColor!.color;
+    });
   }
 }

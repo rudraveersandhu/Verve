@@ -21,6 +21,7 @@
 // *
 
 import 'dart:io';
+import 'package:audio_service/audio_service.dart';
 import 'package:flutter/material.dart';
 import 'package:palette_generator/palette_generator.dart';
 import 'package:verve/models/album.dart';
@@ -29,10 +30,22 @@ import 'package:verve/services/play_audio.dart';
 import 'package:verve/utilities/playlist_provider.dart';
 import 'package:hive_flutter/adapters.dart';
 import 'package:provider/provider.dart';
+import 'audio_player_handler.dart';
 import 'models/playlists.dart';
 import 'models/bottom_player.dart';
 
+late AudioHandler audioHandler;
+
 Future<void> main() async {
+  audioHandler = await AudioService.init(
+    builder: () => AudioPlayerHandler(),
+    config: const AudioServiceConfig(
+      androidNotificationChannelId: 'com.verve.player.channel.audio',
+      androidNotificationChannelName: 'Audio playback',
+      androidNotificationOngoing: true,
+    ),
+  );
+
   if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
     await Hive.initFlutter('Verve/Database');
   } else if (Platform.isIOS) {
@@ -44,32 +57,13 @@ Future<void> main() async {
   runApp(
     MultiProvider(
       providers: [
+        ChangeNotifierProvider<AudioPlayerHandler>(
+          create: (context) => AudioPlayerHandler(),
+        ),
         ChangeNotifierProvider<BottomPlayerModel>(
           create: (context) => BottomPlayerModel(),
         ),
-        ChangeNotifierProvider<PlayAudio>(
-          create: (context) => PlayAudio(
-              updateCard: (tUrl, mode, title, author, dur, id) async {
-                print("${tUrl},${mode},${title},${author},${dur}");
-                if(mode == 'playlist'){
-                  PaletteGenerator paletteGenerator = await PaletteGenerator.fromImageProvider(NetworkImage(tUrl));
-                  final model = context.read<BottomPlayerModel>();
-                  //final box = await Hive.openBox('retain');
-                  print("automatic update successful _____________________________________________________________");
-                    model.cardBackgroundColor = paletteGenerator.dominantColor!.color;
-                    model.currentTitle = title;
-                    model.currentAuthor = author;
-                    model.tUrl = tUrl;
-                    model.playButtonOn = true;
-                    model.isCardVisible = true;
-                    model.currentDuration = dur[1].toInt();
-                    model.filePath = dur[0].toString();
-                    model.vId = id;
-                    //box.put('color', paletteGenerator.dominantColor!.color.toString());
-            }
-          }
-          ),
-        ),
+
         ChangeNotifierProvider<Playlists>(
           create: (context) => Playlists(),
         ),
@@ -102,3 +96,10 @@ class MyApp extends StatelessWidget {
     );
   }
  }
+
+class MediaState {
+  final MediaItem? mediaItem;
+  final Duration position;
+
+  MediaState(this.mediaItem, this.position);
+}

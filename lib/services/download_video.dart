@@ -24,12 +24,8 @@
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:ffmpeg_kit_flutter/ffprobe_kit.dart';
-import 'package:flutter/cupertino.dart';
-
 import 'package:path_provider/path_provider.dart';
-
 import 'package:youtube_explode_dart/youtube_explode_dart.dart';
-
 import '../models/album.dart';
 
 class DownloadVideo {

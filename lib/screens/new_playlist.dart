@@ -23,6 +23,7 @@
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/adapters.dart';
 import 'package:provider/provider.dart';
+import '../models/bottom_player.dart';
 import '../models/playlists.dart';
 import '../utilities/playlist_provider.dart';
 
@@ -54,9 +55,33 @@ class _NewPlaylistState extends State<NewPlaylist> {
   Future<void> makePlaylist(String playlistName) async {
     final nav = Provider.of<Playlists>(context, listen: false);
     var playlistProvider = Provider.of<PlaylistProvider>(context, listen: false);
+/*
+      //open box of saved playlist
+      final box = await Hive.openBox('savedPlaylist');
 
-    try {
+      // call model to mutate value
+      //final model = context.read<BottomPlayerModel>();
 
+
+      List<String> names = await box.get('local_names') ?? <String>[];
+      List<String> songs = await box.get('songs') ?? <String>[];
+
+      bool playlistExists = names.any((playlist) => playlist == playlistName);
+
+      if (!playlistExists) {
+        setState(() {
+          names.add(playlistName);
+          nav.playlist.add(playlistName);
+          playlistProvider.updatePlaylist(nav.playlist);
+        });
+      }
+
+      await box.put('local_names', names);
+      await box.put('songs', songs);
+
+
+*/
+    try{
       final box = await Hive.openBox('playlists');
 
       List<dynamic> playlists = box.get('playlists', defaultValue: []);
@@ -77,6 +102,7 @@ class _NewPlaylistState extends State<NewPlaylist> {
         await box.put('playlists', playlists);
         await box.close();
 
+
         print('Playlist $playlistName created successfully.');
       } else {
         print('Playlist $playlistName already exists.');
@@ -86,11 +112,11 @@ class _NewPlaylistState extends State<NewPlaylist> {
     }
   }
 
-
-
-
   @override
   Widget build(BuildContext context) {
+    var playlistProvider = Provider.of<PlaylistProvider>(context, listen: false);
+
+    print("Start: ${playlistProvider.local_playlists.length}");
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
@@ -174,13 +200,13 @@ class _NewPlaylistState extends State<NewPlaylist> {
               padding: const EdgeInsets.only(top:40.0),
               child: Center(
                 child: ElevatedButton(
-                  onPressed: ()  {
+                  onPressed: ()  async {
                     if(userInput.isNotEmpty){
-                      makePlaylist(userInput);
+                      await makePlaylist(userInput);
                       setState(() {
                         Navigator.pop(context);
                       });
-                      SnackBar(content: Text('Playlist made sucessfully!.'));
+
                     }else{
                       SnackBar(content: Text('Playlist needs to have a name.'));
                     }

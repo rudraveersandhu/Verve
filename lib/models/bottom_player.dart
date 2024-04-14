@@ -28,11 +28,15 @@ class BottomPlayerModel extends ChangeNotifier {
   String currentTitle = '';
   String currentAuthor = '';
   int currentDuration = 0;
+  double durationPosition = 0.0;
   String filePath = '';
   String vId = '';
   String user = '';
   Color cardBackgroundColor = Colors.black12;
   bool playButtonOn = false;
+  List<List<dynamic>> rows = [];
+  List<String> local_rows = [];
+
 
   void updateData({
     required bool isCardVisible,
@@ -40,11 +44,14 @@ class BottomPlayerModel extends ChangeNotifier {
     required String currentTitle,
     required String currentAuthor,
     required int currentDuration,
+    required double durationPosition,
     required String filePath,
     required String vId,
     required String user,
     required Color cardBackgroundColor,
     required bool playButtonOn,
+    required List<List<dynamic>> rows,
+    required List<String> local_rows,
 
   }) {
     this.isCardVisible = isCardVisible;
@@ -52,11 +59,14 @@ class BottomPlayerModel extends ChangeNotifier {
     this.currentTitle = currentTitle;
     this.currentAuthor = currentAuthor;
     this.currentDuration = currentDuration;
+    this.durationPosition = durationPosition;
     this.filePath = filePath;
     this.vId = vId;
     this.user = user;
     this.cardBackgroundColor = cardBackgroundColor;
     this.playButtonOn =playButtonOn;
+    this.rows = rows;
+    this.local_rows = local_rows;
     notifyListeners();
   }
 }

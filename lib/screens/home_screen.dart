@@ -73,32 +73,44 @@ class _HomeScreenState extends State<HomeScreen> with ChangeNotifier, TickerProv
 
   @override
   Widget build(BuildContext context) {
+    final model = context.read<BottomPlayerModel>();
     _acontroller.forward();
     return Stack(
       children: [
-        PersistentTabView(
-          context,
-          controller: _controller,
-          screens: _buildScreens(),
-          items: _navBarsItems(),
-          confineInSafeArea: true,
-          backgroundColor: Colors.black,
-          handleAndroidBackButtonPress: true,
-          resizeToAvoidBottomInset: true,
-          stateManagement: true,
-          hideNavigationBarWhenKeyboardShows: true,
-          popAllScreensOnTapOfSelectedTab: true,
-          popActionScreens: PopActionScreensType.all,
-          itemAnimationProperties: ItemAnimationProperties(
-            duration: Duration(milliseconds: 200),
-            curve: Curves.ease,
-          ),
-          screenTransitionAnimation: ScreenTransitionAnimation(
-            animateTabTransition: true,
-            curve: Curves.ease,
-            duration: Duration(milliseconds: 200),
-          ),
-          navBarStyle: NavBarStyle.style12,
+        Column(
+          children: [
+            Container(
+              height: MediaQuery.of(context).size.height,
+              width: MediaQuery.of(context).size.width,
+              child: PersistentTabView(
+                context,
+                controller: _controller,
+                screens: _buildScreens(),
+                items: _navBarsItems(),
+                confineInSafeArea: true,
+                backgroundColor: Colors.black,
+                handleAndroidBackButtonPress: true,
+                resizeToAvoidBottomInset: true,
+                stateManagement: true,
+                hideNavigationBarWhenKeyboardShows: true,
+                popAllScreensOnTapOfSelectedTab: true,
+                popActionScreens: PopActionScreensType.all,
+                itemAnimationProperties: ItemAnimationProperties(
+                  duration: Duration(milliseconds: 200),
+                  curve: Curves.ease,
+                ),
+                screenTransitionAnimation: ScreenTransitionAnimation(
+                  animateTabTransition: true,
+                  curve: Curves.ease,
+                  duration: Duration(milliseconds: 200),
+                ),
+                navBarStyle: NavBarStyle.style12,
+              ),
+            ),
+            Expanded(
+              child: _buildScreens()[_controller.index], // Display current screen based on index
+            ),
+          ],
         ),
         Positioned(
           bottom: MediaQuery.of(context).padding.bottom + kBottomNavigationBarHeight - 2,
@@ -109,7 +121,7 @@ class _HomeScreenState extends State<HomeScreen> with ChangeNotifier, TickerProv
                 padding: const EdgeInsets.only(left: 3, right: 0),
                 child: FadeTransition(
                     opacity: _animation,
-                    child: BottomPlayer()),
+                    child: model.isCardVisible ? BottomPlayer() : Container()),
               ),
             ],
           ),
@@ -120,7 +132,6 @@ class _HomeScreenState extends State<HomeScreen> with ChangeNotifier, TickerProv
 
 
   List<Widget> _buildScreens() {
-
 
     return [
       StartScreen(),
@@ -133,25 +144,52 @@ class _HomeScreenState extends State<HomeScreen> with ChangeNotifier, TickerProv
   List<PersistentBottomNavBarItem> _navBarsItems() {
     return [
       PersistentBottomNavBarItem(
-        icon: Icon(CupertinoIcons.house_fill, size: 24),
+        icon: GestureDetector(
+            onTap: (){
+              setState(() {
+                _controller.index = 0;
+              });
+            },
+            child: Icon(
+                CupertinoIcons.house_fill,
+                size: 24)
+        ),
         title: ("Home"),
         activeColorPrimary: CupertinoColors.activeOrange,
         inactiveColorPrimary: CupertinoColors.systemGrey,
       ),
       PersistentBottomNavBarItem(
-        icon: Icon(CupertinoIcons.search, size: 24),
+        icon: GestureDetector(
+            onTap: (){
+              setState(() {
+                _controller.index = 1;
+              });
+            },
+            child: Icon(CupertinoIcons.search, size: 24)),
         title: ("Search"),
         activeColorPrimary: CupertinoColors.activeOrange,
         inactiveColorPrimary: CupertinoColors.systemGrey,
       ),
       PersistentBottomNavBarItem(
-        icon: Icon(CupertinoIcons.music_albums, size: 24),
+        icon: GestureDetector(
+            onTap: (){
+              setState(() {
+                _controller.index = 2;
+              });
+            },
+            child: Icon(CupertinoIcons.music_albums, size: 24)),
         title: ("Library"),
         activeColorPrimary: CupertinoColors.activeOrange,
         inactiveColorPrimary: CupertinoColors.systemGrey,
       ),
       PersistentBottomNavBarItem(
-        icon: Icon(CupertinoIcons.settings, size: 24),
+        icon: GestureDetector(
+            onTap: (){
+              setState(() {
+                _controller.index = 3;
+              });
+            },
+            child: Icon(CupertinoIcons.settings, size: 24)),
         title: ("Settings"),
         activeColorPrimary: CupertinoColors.activeOrange,
         inactiveColorPrimary: CupertinoColors.systemGrey,

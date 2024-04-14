@@ -24,12 +24,28 @@
 import 'package:flutter/foundation.dart';
 
 class PlaylistProvider extends ChangeNotifier {
-  List<String> _playlist = [];
+  List<String> _local_playlists = [];
+  List<String> _youtube_playlists = [];
+  List<String> _url = [];
 
-  List<String> get playlist => _playlist;
+
+  List<String> get local_playlists => _local_playlists;
+  List<String> get youtube_playlists => _youtube_playlists;
+  List<String> get url => _url;
+
+  void updateUrl(List<String> url) {
+    _url = url;
+    notifyListeners();
+  }
 
   void updatePlaylist(List<String> newPlaylist) {
-    _playlist = newPlaylist;
+    _local_playlists = newPlaylist;
+    notifyListeners();
+  }
+
+  void updatePlaylistURLS(List<String> newPlaylistURLS){
+    _youtube_playlists = newPlaylistURLS;
+    print("playlist urls provider: $_youtube_playlists");
     notifyListeners();
   }
 }

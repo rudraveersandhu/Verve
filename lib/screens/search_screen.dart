@@ -21,13 +21,16 @@
 // *
 
 import 'dart:ui';
+import 'package:audio_service/audio_service.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/adapters.dart';
 import 'package:palette_generator/palette_generator.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:provider/provider.dart';
+import 'package:verve/audio_player_handler.dart';
 import 'package:youtube_explode_dart/youtube_explode_dart.dart';
+import '../main.dart';
 import '../models/playlists.dart';
 import '../models/bottom_player.dart';
 import '../services/download_video.dart';
@@ -41,12 +44,15 @@ class SearchScreen extends StatefulWidget {
 }
 
 class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderStateMixin{
-  //int currentlyPlayingIndex = -1;
+  int currentlyPlayingIndex = -1;
+  Map<String, bool> playmap = {
+    "showCard": false,
+    "songPlay": false,
+  };
   int currentlydownloadingIndex = -1;
   String currentThumb = '';
   String currentTitle = '';
   String currentAuthor = '';
-  bool isCardVisible = true;
   List<Video> _searchResults = [];
   bool hasUserSearched = false;
   final FocusNode _focusNode = FocusNode();
@@ -70,6 +76,7 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
   Future<void> fetchData(List<Video> searchResults) async {
     List<Future<bool>> futures = [];
 
+
     for (int i = 0; i < searchResults.length; i++) {
       futures.add(checkInPlaylist('My Songs', searchResults[i].id.toString()));
     }
@@ -81,19 +88,20 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
     });
   }
 
-  void _searchYoutubeVideos(String query) async {
+  _searchYoutubeVideos(String query) async {
     var yt = YoutubeExplode();
     try {
       var searchList = await yt.search(query);
-      //isInPlaylist = List.generate(_searchResults.length, (index) => checkInPlaylist('My Songs', _searchResults[index].id.toString()));
-      await fetchData(searchList);
       setState(() {
         _searchResults = searchList;
         isPlayingList = List.generate(_searchResults.length, (index) => false);
 
       });
+      //isInPlaylist = List.generate(_searchResults.length, (index) => checkInPlaylist('My Songs', _searchResults[index].id.toString()));
+      await fetchData(searchList);
+
     } catch (e) {
-      //print('Error fetching YouTube videos: $e');
+      print('Error fetching YouTube videos: $e');
     }
   }
 
@@ -175,47 +183,51 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
                         const SizedBox(height: 25),
                         Padding(
                           padding: const EdgeInsets.only(left: 15, right: 15),
-                          child: TextField(
-                            controller: _textEditingController,
-                            focusNode: _focusNode,
-                            onTap: () {},
-                            onChanged: (value) {
-                              setState(() {
-                                if (value == '') {
-                                  hasUserSearched = false;
-                                } else {
-                                  hasUserSearched = true;
-                                }
-                              });
-                              _searchYoutubeVideos(value);
-                            },
-                            decoration: InputDecoration(
-                              contentPadding:
-                                  const EdgeInsets.symmetric(vertical: 0),
-                              filled: true,
-                              fillColor: Colors.white,
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(10.0),
-                                borderSide: BorderSide.none,
+                          child: Material(
+                            child: TextField(
+                              controller: _textEditingController,
+                              focusNode: _focusNode,
+                              onTap: () {},
+                              onChanged: (value) {
+
+                                setState(()  {
+                                  if (value == '') {
+                                    hasUserSearched = false;
+                                  } else {
+                                    hasUserSearched = true;
+                                    _searchYoutubeVideos(value);
+                                  }
+                                });
+
+                              },
+                              decoration: InputDecoration(
+                                contentPadding:
+                                    const EdgeInsets.symmetric(vertical: 0),
+                                filled: true,
+                                fillColor: Colors.white,
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(10.0),
+                                  borderSide: BorderSide.none,
+                                ),
+                                hintText: 'What do you feel like listening to?',
+                                prefixIcon: const Padding(
+                                  padding: EdgeInsets.only(left: 15, top: 0),
+                                  child: Icon(Icons.search),
+                                ),
+                                suffixIcon: GestureDetector(
+                                    onTap: () {
+                                      setState(() {
+                                        _textEditingController.clear();
+                                        hasUserSearched = false;
+                                      });
+                                    },
+                                    child: hasUserSearched
+                                        ? Icon(Icons.delete_outline)
+                                        : Icon(
+                                            Icons.delete_outline,
+                                            color: Colors.white,
+                                          )),
                               ),
-                              hintText: 'What do you feel like listening to?',
-                              prefixIcon: const Padding(
-                                padding: EdgeInsets.only(left: 15, top: 0),
-                                child: Icon(Icons.search),
-                              ),
-                              suffixIcon: GestureDetector(
-                                  onTap: () {
-                                    setState(() {
-                                      _textEditingController.clear();
-                                      hasUserSearched = false;
-                                    });
-                                  },
-                                  child: hasUserSearched
-                                      ? Icon(Icons.delete_outline)
-                                      : Icon(
-                                          Icons.delete_outline,
-                                          color: Colors.white,
-                                        )),
                             ),
                           ),
                         ),
@@ -240,16 +252,15 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
                                       var thumbnailUrl = _searchResults[index].thumbnails.highResUrl ;
                                       var tempUrl = _searchResults[index].thumbnails.lowResUrl ;
                                       //isInPlaylist = checkInPlaylist('My Songs', vId.toString()) as List<bool>;
-
                                       return Padding(
                                         padding: const EdgeInsets.only(
                                             left: 15, right: 15),
                                         child: GestureDetector(
-
                                           onTap: () async {
-                                            final audio = Provider.of<PlayAudio>(context, listen: false);
+
                                             final model = context.read<BottomPlayerModel>();
-                                            List path_dur = await DownloadVideo().downloadVideo(vId.toString());  // Download the audio file, return a list with file location and duration
+                                            model.isCardVisible = true;
+                                            final List path_dur = await DownloadVideo().downloadVideo(vId.toString());  // Download the audio file, return a list with file location and duration
                                             await _updateCardColor(
                                                 thumbnailUrl,
                                                 _searchResults[index].title,
@@ -261,15 +272,34 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
                                                 thumbnailUrl,
                                                 path_dur,
                                                 tempUrl,
-                                                path_dur[1].toInt()
+                                                path_dur[1].toInt(),
+                                                _searchResults[index].id.toString()
                                             );
-                                            await audio.initializeAudioPlayer(path_dur[0].toString());
-                                            await audio.playAudio();
-
-                                            setState(() {
-                                              model.tUrl = thumbnailUrl;
-                                              model.filePath = path_dur[0];
-                                            });
+                                            String? color = await updateCardColor(tempUrl);
+                                            model.currentTitle = _searchResults[index].title;
+                                            model.currentAuthor = _searchResults[index].author;
+                                            model.currentDuration = path_dur[1].toInt();
+                                            model.tUrl = thumbnailUrl;
+                                            model.vId = _searchResults[index].id.toString();
+                                            model.tUrl = thumbnailUrl;
+                                            model.filePath = path_dur[0];
+                                            MediaItem item = MediaItem(
+                                              id: path_dur[0].toString(),
+                                              album: _searchResults[index].author,
+                                              title: _searchResults[index].title,
+                                              artist: _searchResults[index].author,
+                                              duration: Duration(seconds: path_dur[1].toInt()),
+                                              artUri: Uri.parse(thumbnailUrl),
+                                                genre: color,
+                                                playable: true,
+                                                extras: playmap = {
+                                                  "showCard": true,
+                                                  "songPlay": true,
+                                                }
+                                            );
+                                            await AudioPlayerHandler().initializeAudioPlayer(path_dur[0].toString());
+                                            audioHandler.updateMediaItem(item);
+                                            audioHandler.play();
                                           },
                                           child: Container(
                                             width: MediaQuery.of(context).size.width,
@@ -379,7 +409,7 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
                                                             await addToPlaylist("My Songs", _searchResults[index].title,_searchResults[index].author, thumbnailUrl, path_dur[0],vId.toString() ,tempUrl, path_dur[1].toInt());
 
                                                             setState(() {
-                                                              print("Running fetch data final part");
+                                                              //print("Running fetch data final part");
                                                               fetchData(_searchResults);
                                                             });
                                                             ScaffoldMessenger.of(context).showSnackBar(
@@ -411,7 +441,7 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
                                                               ),
                                                             );
                                                           },
-                                                          child: (isInPlaylist[index])
+                                                          child: isInPlaylist[index]
                                                               ? Icon(CupertinoIcons.heart_fill, color: Colors.deepOrange, /*key: Key('${index}heart_filled')*/)
                                                               : Icon(CupertinoIcons.heart, color: Colors.white, /*key: Key('heart')*/),
 
@@ -460,10 +490,10 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
     setState(() {
       if (!nav.playlist.contains('My Songs')) {
         nav.playlist.add('My Songs');
-        print(nav.playlist);
+        //print(nav.playlist);
         playlistProvider.updatePlaylist(nav.playlist);
       }
-      print(nav.playlist);
+      //print(nav.playlist);
     });
 
     List<dynamic> songs = mySongsPlaylist['songs'];
@@ -542,7 +572,7 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
   }
 
   void updateRetain(String songTitle, String artist, String thumb,
-      List path_dur, String tempUrl, int duration) async {
+      List path_dur, String tempUrl, int duration, String id) async {
     final box = await Hive.openBox('retain');
     box.put('song', songTitle);
     box.put('author', artist);
@@ -550,6 +580,7 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
     box.put('audPath', path_dur[0]);
     box.put('tempUrl', tempUrl);
     box.put('duration', duration);
+    box.put('id', id);
   }
 
 
@@ -656,7 +687,7 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
             child: ListView.builder(
               padding: EdgeInsets.zero,
               shrinkWrap: true,
-              itemCount: playlistProvider.playlist.length,
+              itemCount: playlistProvider.youtube_playlists.length,
               itemBuilder: (context, index) {
                 bool isMySongs = nav.playlist[index] == "My Songs";
                 bool isBlank = nav.playlist[index] == "blank";
@@ -797,5 +828,14 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
       //print('Playlist not found: $targetPlaylistName');
       return false;
     }
+  }
+
+  Future<String?> updateCardColor(url) async {
+    final box = await Hive.openBox('retain');
+    PaletteGenerator paletteGenerator = await PaletteGenerator.fromImageProvider(NetworkImage(url));
+    String color = paletteGenerator.dominantColor!.color.toString();
+    box.put('color', paletteGenerator.dominantColor!.color.toString());
+    return color;
+
   }
 }
