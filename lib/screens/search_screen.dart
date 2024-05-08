@@ -26,6 +26,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/adapters.dart';
 import 'package:palette_generator/palette_generator.dart';
+import 'package:persistent_bottom_nav_bar/persistent_tab_view.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:provider/provider.dart';
 import 'package:verve/audio_player_handler.dart';
@@ -36,6 +37,7 @@ import '../models/bottom_player.dart';
 import '../services/download_video.dart';
 import '../services/play_audio.dart';
 import '../utilities/playlist_provider.dart';
+import 'home_screen.dart';
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
@@ -44,9 +46,11 @@ class SearchScreen extends StatefulWidget {
 }
 
 class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderStateMixin{
+  //PersistentTabController _bpcontroller = PersistentTabController(initialIndex: 0);
+
   int currentlyPlayingIndex = -1;
   Map<String, bool> playmap = {
-    "showCard": false,
+    "showCard": true,
     "songPlay": false,
   };
   int currentlydownloadingIndex = -1;
@@ -70,12 +74,12 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
   void dispose() {
     _textEditingController.dispose();
     _controller.dispose();
+
     super.dispose();
   }
 
   Future<void> fetchData(List<Video> searchResults) async {
     List<Future<bool>> futures = [];
-
 
     for (int i = 0; i < searchResults.length; i++) {
       futures.add(checkInPlaylist('My Songs', searchResults[i].id.toString()));
@@ -92,13 +96,13 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
     var yt = YoutubeExplode();
     try {
       var searchList = await yt.search(query);
-      setState(() {
+
+      setState(()  {
+        fetchData(searchList);
         _searchResults = searchList;
         isPlayingList = List.generate(_searchResults.length, (index) => false);
-
       });
       //isInPlaylist = List.generate(_searchResults.length, (index) => checkInPlaylist('My Songs', _searchResults[index].id.toString()));
-      await fetchData(searchList);
 
     } catch (e) {
       print('Error fetching YouTube videos: $e');
@@ -117,6 +121,7 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
 
   @override
   Widget build(BuildContext context) {
+    final model = context.read<BottomPlayerModel>();
     //final model = context.read<BottomPlayerModel>();
     //final audio = Provider.of<PlayAudio>(context);
     _controller.forward();
@@ -190,12 +195,12 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
                               onTap: () {},
                               onChanged: (value) {
 
-                                setState(()  {
+                                setState(()   {
                                   if (value == '') {
                                     hasUserSearched = false;
                                   } else {
                                     hasUserSearched = true;
-                                    _searchYoutubeVideos(value);
+                                     _searchYoutubeVideos(value);
                                   }
                                 });
 
@@ -251,16 +256,26 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
                                       var vId = _searchResults[index].id;
                                       var thumbnailUrl = _searchResults[index].thumbnails.highResUrl ;
                                       var tempUrl = _searchResults[index].thumbnails.lowResUrl ;
+                                      //fetchData(_searchResults);
+                                      //isInPlaylist = List.generate(_searchResults.length, (index) => checkInPlaylist('My Songs', _searchResults[index].id.toString()));
                                       //isInPlaylist = checkInPlaylist('My Songs', vId.toString()) as List<bool>;
                                       return Padding(
                                         padding: const EdgeInsets.only(
                                             left: 15, right: 15),
                                         child: GestureDetector(
                                           onTap: () async {
-
-                                            final model = context.read<BottomPlayerModel>();
-                                            model.isCardVisible = true;
+                                            String? color = await updateCardColor(tempUrl);
                                             final List path_dur = await DownloadVideo().downloadVideo(vId.toString());  // Download the audio file, return a list with file location and duration
+                                            setState(() {
+                                              model.isCardVisible = true;
+                                              model.currentTitle = _searchResults[index].title;
+                                              model.currentAuthor = _searchResults[index].author;
+                                              model.currentDuration = path_dur[1].toInt();
+                                              model.tUrl = thumbnailUrl;
+                                              model.vId = _searchResults[index].id.toString();
+                                              model.tUrl = thumbnailUrl;
+                                              model.filePath = path_dur[0];
+                                            });
                                             await _updateCardColor(
                                                 thumbnailUrl,
                                                 _searchResults[index].title,
@@ -275,21 +290,13 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
                                                 path_dur[1].toInt(),
                                                 _searchResults[index].id.toString()
                                             );
-                                            String? color = await updateCardColor(tempUrl);
-                                            model.currentTitle = _searchResults[index].title;
-                                            model.currentAuthor = _searchResults[index].author;
-                                            model.currentDuration = path_dur[1].toInt();
-                                            model.tUrl = thumbnailUrl;
-                                            model.vId = _searchResults[index].id.toString();
-                                            model.tUrl = thumbnailUrl;
-                                            model.filePath = path_dur[0];
                                             MediaItem item = MediaItem(
-                                              id: path_dur[0].toString(),
-                                              album: _searchResults[index].author,
-                                              title: _searchResults[index].title,
-                                              artist: _searchResults[index].author,
-                                              duration: Duration(seconds: path_dur[1].toInt()),
-                                              artUri: Uri.parse(thumbnailUrl),
+                                                id: path_dur[0].toString(),
+                                                album: _searchResults[index].author,
+                                                title: _searchResults[index].title,
+                                                artist: _searchResults[index].author,
+                                                duration: Duration(seconds: path_dur[1].toInt()),
+                                                artUri: Uri.parse(thumbnailUrl),
                                                 genre: color,
                                                 playable: true,
                                                 extras: playmap = {
@@ -297,9 +304,13 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
                                                   "songPlay": true,
                                                 }
                                             );
+
+
+
                                             await AudioPlayerHandler().initializeAudioPlayer(path_dur[0].toString());
                                             audioHandler.updateMediaItem(item);
                                             audioHandler.play();
+
                                           },
                                           child: Container(
                                             width: MediaQuery.of(context).size.width,
@@ -406,7 +417,16 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
                                                               currentlydownloadingIndex = index;
                                                             }
                                                             List path_dur = await DownloadVideo().downloadVideo(vId.toString());
-                                                            await addToPlaylist("My Songs", _searchResults[index].title,_searchResults[index].author, thumbnailUrl, path_dur[0],vId.toString() ,tempUrl, path_dur[1].toInt());
+                                                            await addToPlaylist(
+                                                                'vjv_dsc_Sdc_SDc_Dvds_Vd',
+                                                                _searchResults[index].title,
+                                                                _searchResults[index].author,
+                                                                thumbnailUrl,
+                                                                path_dur[0],
+                                                                vId.toString() ,
+                                                                tempUrl,
+                                                                path_dur[1].toInt());
+
 
                                                             setState(() {
                                                               //print("Running fetch data final part");
@@ -420,9 +440,20 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
                                                                     Text('Added to "My Songs" successfully !', style: TextStyle(fontSize: 12)),
                                                                     SizedBox(width: 10),
                                                                     ElevatedButton(
-                                                                      onPressed: () {
+                                                                      onPressed: () async {
+                                                                        await removeFromPlaylist(
+                                                                            "vjv_dsc_Sdc_SDc_Dvds_Vd",
+                                                                            _searchResults[index].title,
+                                                                            _searchResults[index].author,
+                                                                            thumbnailUrl,
+                                                                            path_dur[0],
+                                                                            thumbnailUrl,
+                                                                            vId.toString(),
+                                                                            path_dur[1].toInt()
+                                                                        );
                                                                         setState(() {
                                                                           showPlaylistSelector();
+
                                                                         });
                                                                       },
                                                                       child: Container(
@@ -441,9 +472,9 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
                                                               ),
                                                             );
                                                           },
-                                                          child: isInPlaylist[index]
+                                                          /*child: isInPlaylist[index]
                                                               ? Icon(CupertinoIcons.heart_fill, color: Colors.deepOrange, /*key: Key('${index}heart_filled')*/)
-                                                              : Icon(CupertinoIcons.heart, color: Colors.white, /*key: Key('heart')*/),
+                                                              : Icon(CupertinoIcons.heart, color: Colors.white, /*key: Key('heart')*/),*/
 
                                                         ),
                                                       ),
@@ -473,101 +504,129 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
     );
   }
 
-  Future<void> updateMySongs(String songTitle, String artist, String thumb,
-      String audPath, String tempUrl) async {
-    var playlistProvider =
-        Provider.of<PlaylistProvider>(context, listen: false);
-    final nav = Provider.of<Playlists>(context, listen: false);
+  removeFromPlaylist(
+      String playlistId,
+      String songTitle,
+      String artist,
+      String thumb,
+      String audPath,
+      String tempUrl,
+      String vId ,
+      int dur) async {
+
     final box = await Hive.openBox('playlists');
 
     List<dynamic> storedPlaylists = box.get('playlists', defaultValue: []);
+    bool playlistExists = storedPlaylists.any((playlist) => playlist['id'] == playlistId);
 
-    var mySongsPlaylist = storedPlaylists.firstWhere(
-      (playlist) => playlist['name'] == 'My Songs',
-      orElse: () => {'name': 'My Songs', 'songs': []},
-    );
+    if(playlistExists){
+      var mySongsPlaylist = storedPlaylists.firstWhere(
+            (playlist) => playlist['id'] == playlistId,
+        orElse: () => {
+          'name': '',
+          'songs': []
+        },
+      );
 
-    setState(() {
-      if (!nav.playlist.contains('My Songs')) {
-        nav.playlist.add('My Songs');
-        //print(nav.playlist);
-        playlistProvider.updatePlaylist(nav.playlist);
+      List<dynamic> songs = mySongsPlaylist['songs'];
+
+      bool isSongAlreadyPresent = songs.any((song) =>
+      song['songTitle'] == songTitle && song['songAuthor'] == artist);
+
+      if (isSongAlreadyPresent) {
+        print('Song is already present in $playlistId playlist.');
+      } else {
+        songs.remove({
+          'songTitle': songTitle,
+          'songAuthor': artist,
+          'tUrl': tempUrl,
+          'vId': vId,
+          'audPath': audPath,
+          'thumbnail': thumb,
+          'duration': dur,
+        });
+
+        box.put('playlists', storedPlaylists);
+        await box.close();
+
+        /* setState(() {
+        if (!nav.playlist.contains(playlistName)) {
+          nav.playlist.add(playlistName);
+          playlistProvider.updateLocalPlaylist(nav.playlist);
+        }
+      });*/
       }
-      //print(nav.playlist);
-    });
-
-    List<dynamic> songs = mySongsPlaylist['songs'];
-
-    bool isSongAlreadyPresent = songs.any((song) =>
-        song['songTitle'] == songTitle && song['songAuthor'] == artist);
-
-    //print("BHai ye dekh ${songs[0]['songTitle']}: $songTitle");
-
-    if (isSongAlreadyPresent) {
-      //print('Song is already present in "My Songs" playlist.');
-      //print("BHai ye dekh ${songs[1]['songTitle']}: $songTitle");
-    } else {
-
-      songs.add({
-        'songTitle': songTitle,
-        'songAuthor': artist,
-        'tUrl': tempUrl,
-        'vId': audPath,
-        'thumbnail': thumb,
-      });
-
-      box.put('playlists', storedPlaylists);
-
       print('Song added to "My Songs" playlist successfully.');
+    }else{
+      print("PLaylist DOesnt exist");
     }
   }
 
-  Future<void> addToPlaylist(String playlistName, String songTitle,
-      String artist, String thumb, String audPath, String vId , String tempUrl,int dur) async {
-    var playlistProvider =
-    Provider.of<PlaylistProvider>(context, listen: false);
-    final nav = Provider.of<Playlists>(context, listen: false);
+  Future<void> addToPlaylist(
+      String playlistId,
+      String songTitle,
+      String artist,
+      String thumb,
+      String audPath,
+      String vId ,
+      String tempUrl,
+      int dur) async {
+
     final box = await Hive.openBox('playlists');
 
     List<dynamic> storedPlaylists = box.get('playlists', defaultValue: []);
+    //bool playlistExists = storedPlaylists.any((playlist) => playlist['id'] == playlistId);
+    bool playlistExists = storedPlaylists.any((playlist){
+      print(playlist['id']);
+      if(playlist['id'] == playlistId){
+        return true;
+      }else{
+        return false;
+      }
+    });
 
-    var mySongsPlaylist = storedPlaylists.firstWhere(
-          (playlist) => playlist['name'] == playlistName,
-      orElse: () => {
-        'name': playlistName,
-        'songs': []
-      },
-    );
+    if(playlistExists){
+      var mySongsPlaylist = storedPlaylists.firstWhere(
+            (playlist) => playlist['id'] == playlistId,
+        orElse: () => {
+          'name': '',
+          'songs': []
+        },
+      );
 
-    List<dynamic> songs = mySongsPlaylist['songs'];
+      List<dynamic> songs = mySongsPlaylist['songs'];
 
-    bool isSongAlreadyPresent = songs.any((song) =>
-    song['songTitle'] == songTitle && song['songAuthor'] == artist);
+      bool isSongAlreadyPresent = songs.any((song) =>
+      song['songTitle'] == songTitle && song['songAuthor'] == artist);
 
-    if (isSongAlreadyPresent) {
-      print('Song is already present in $playlistName playlist.');
-    } else {
-      songs.add({
-        'songTitle': songTitle,
-        'songAuthor': artist,
-        'tUrl': tempUrl,
-        'vId': vId,
-        'audPath': audPath,
-        'thumbnail': thumb,
-        'duration': dur,
-      });
+      if (isSongAlreadyPresent) {
+        print('Song is already present in $playlistId playlist.');
+      } else {
+        songs.add({
+          'songTitle': songTitle,
+          'songAuthor': artist,
+          'tUrl': tempUrl,
+          'vId': vId,
+          'audPath': audPath,
+          'thumbnail': thumb,
+          'duration': dur,
+        });
 
-      box.put('playlists', storedPlaylists);
-      await box.close();
+        box.put('playlists', storedPlaylists);
+        await box.close();
 
-      setState(() {
+        /* setState(() {
         if (!nav.playlist.contains(playlistName)) {
           nav.playlist.add(playlistName);
-          playlistProvider.updatePlaylist(nav.playlist);
+          playlistProvider.updateLocalPlaylist(nav.playlist);
         }
-      });
+      });*/
 
+    }
       print('Song added to "My Songs" playlist successfully.');
+    }else{
+
+      print("pLaylist doesnt exist");
     }
   }
 
@@ -691,10 +750,7 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
               itemBuilder: (context, index) {
                 bool isMySongs = nav.playlist[index] == "My Songs";
                 bool isBlank = nav.playlist[index] == "blank";
-                bool Trending = nav.playlist[index] == "Trending";
-                bool Punjabi = nav.playlist[index] == "Punjabi";
-                bool Top10Indian = nav.playlist[index] == "Top10Indian";
-                bool EngRom = nav.playlist[index] == "EngRom";
+
 
                 if (!isBlank) {
                   List<Color> gradientColors = [Colors.grey, Colors.grey.shade700];
@@ -702,7 +758,7 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
                   IconData iconData = isMySongs
                       ? Icons.thumb_up
                       : Icons.sports_gymnastics;
-                  return (!Trending && !Punjabi && !Top10Indian && !EngRom) ? ListTile(
+                  return (!isBlank) ? ListTile(
                     visualDensity: VisualDensity(horizontal: 0, vertical: -4),
                     onTap: () {
                       addToPlaylist(
@@ -715,6 +771,7 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
                           model.vId,
                           model.currentDuration
                       );
+
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Row(

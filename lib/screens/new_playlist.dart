@@ -20,6 +20,8 @@
 // * Project Git: https://github.com/rudraveersandhu/Verve
 // *
 
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/adapters.dart';
 import 'package:provider/provider.dart';
@@ -52,58 +54,52 @@ class _NewPlaylistState extends State<NewPlaylist> {
     super.dispose();
   }
 
-  Future<void> makePlaylist(String playlistName) async {
+  String generateRandomId() {
+    const String charset =
+        '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!@#\$%^&*()-_+=<>?/.,';
+
+    Random random = Random();
+    String id = '';
+    for (int i = 0; i < 15; i++) {
+      int randomIndex = random.nextInt(charset.length);
+      id += charset[randomIndex];
+    }
+    return id;
+  }
+
+  Future<void> makePlaylist( String playlistName  ) async {
     final nav = Provider.of<Playlists>(context, listen: false);
     var playlistProvider = Provider.of<PlaylistProvider>(context, listen: false);
-/*
-      //open box of saved playlist
-      final box = await Hive.openBox('savedPlaylist');
-
-      // call model to mutate value
-      //final model = context.read<BottomPlayerModel>();
-
-
-      List<String> names = await box.get('local_names') ?? <String>[];
-      List<String> songs = await box.get('songs') ?? <String>[];
-
-      bool playlistExists = names.any((playlist) => playlist == playlistName);
-
-      if (!playlistExists) {
-        setState(() {
-          names.add(playlistName);
-          nav.playlist.add(playlistName);
-          playlistProvider.updatePlaylist(nav.playlist);
-        });
-      }
-
-      await box.put('local_names', names);
-      await box.put('songs', songs);
-
-
-*/
+    final model  = context.read<BottomPlayerModel>();
     try{
       final box = await Hive.openBox('playlists');
-
       List<dynamic> playlists = box.get('playlists', defaultValue: []);
-
       bool playlistExists = playlists.any((playlist) => playlist['name'] == playlistName);
+      List<String> local_names = await box.get('local_names') ?? <String>[];
 
       if (!playlistExists) {
-        setState(() {
+
+        setState((){
+          local_names.add(playlistName);
           nav.playlist.add(playlistName);
-          playlistProvider.updatePlaylist(nav.playlist);
+          playlistProvider.updateLocalPlaylist(nav.playlist);
         });
+
+        String id = generateRandomId();
 
         playlists.add({
           'name': playlistName,
+          'id' : id,
+          'author': model.user,
+          'description' : '',
+          'NumOfSongs': 0,
           'songs': [],
+
         });
 
+        await box.put('local_names', local_names);
         await box.put('playlists', playlists);
         await box.close();
-
-
-        print('Playlist $playlistName created successfully.');
       } else {
         print('Playlist $playlistName already exists.');
       }
@@ -203,10 +199,10 @@ class _NewPlaylistState extends State<NewPlaylist> {
                   onPressed: ()  async {
                     if(userInput.isNotEmpty){
                       await makePlaylist(userInput);
+                      print('New playlist $userInput made sucessfully');
                       setState(() {
                         Navigator.pop(context);
                       });
-
                     }else{
                       SnackBar(content: Text('Playlist needs to have a name.'));
                     }

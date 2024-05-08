@@ -759,10 +759,11 @@ class _AlbumCollectionState extends State<AlbumCollection> with TickerProviderSt
                   playback = 'linear';
                   //totalDuration = Duration(seconds: path_dur[1].toInt());
                   await AudioPlayerHandler().initializePlaylistAudioPlayer(items,index,path_dur,0,'linear');
-                  model.isCardVisible = true;
+
                   audioHandler.play();
 
                   setState(()  {
+                    model.isCardVisible = true;
 
                     isPlayingList[index] = !isPlayingList[index];
                     if (currentlyPlayingIndex != index) {
@@ -945,7 +946,7 @@ class _AlbumCollectionState extends State<AlbumCollection> with TickerProviderSt
       setState(() {
         if (!nav.playlist.contains(playlistName)) {
           nav.playlist.add(playlistName);
-          playlistProvider.updatePlaylist(nav.playlist);
+          playlistProvider.updateLocalPlaylist(nav.playlist);
         }
       });
 

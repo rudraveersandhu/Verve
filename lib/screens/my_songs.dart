@@ -27,6 +27,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:hive_flutter/adapters.dart';
+import 'package:marquee/marquee.dart';
 import 'package:palette_generator/palette_generator.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:provider/provider.dart';
@@ -34,11 +35,14 @@ import '../audio_player_handler.dart';
 import '../main.dart';
 import '../models/bottom_player.dart';
 import '../services/play_audio.dart';
+import '../services/youtube_service.dart';
+import '../utilities/playlist_provider.dart';
 
 class MySongs extends StatefulWidget {
-  final String title;
+  final String playlistId;
+  final int index;
 
-  const MySongs({Key? key, required this.title})
+  const MySongs({Key? key, required this.playlistId,  required this.index})
       : super(key: key);
 
   @override
@@ -58,7 +62,6 @@ class _MySongsState extends State<MySongs> with TickerProviderStateMixin,ChangeN
 
   @override
   void initState() {
-    // TODO: implement initState
     _controller = AnimationController(
       vsync: this,
       duration: Duration(milliseconds: 600),
@@ -67,23 +70,21 @@ class _MySongsState extends State<MySongs> with TickerProviderStateMixin,ChangeN
     super.initState();
   }
 
-
   @override
   void dispose() {
-    // TODO: implement dispose
     _controller.dispose();
     super.dispose();
   }
 
-
-  Future<List<Map<String, Object>>> accessPlaylist(String targetPlaylistName) async {
+  Future<List<Map<String, Object>>> accessPlaylist(String targetPlaylistId) async {
     final box = await Hive.openBox('playlists');
     List<dynamic> storedPlaylists = box.get('playlists', defaultValue: []);
 
     var targetPlaylist = storedPlaylists.firstWhere(
-          (playlist) => playlist['name'] == targetPlaylistName,
+          (playlist) => playlist['name'] == targetPlaylistId,
       orElse: () => <String, Object>{},
     );
+    print(targetPlaylist);
 
     if (targetPlaylist != null) {
       List<dynamic> songs = targetPlaylist['songs'];
@@ -109,7 +110,7 @@ class _MySongsState extends State<MySongs> with TickerProviderStateMixin,ChangeN
       return playlistDetails;
 
     } else {
-      print('Playlist not found: $targetPlaylistName');
+      print('Playlist not found: $targetPlaylistId');
       return [];
     }
   }
@@ -117,7 +118,7 @@ class _MySongsState extends State<MySongs> with TickerProviderStateMixin,ChangeN
   @override
   Widget build(BuildContext context) {
     _controller.forward();
-
+    var playlistProvider = Provider.of<PlaylistProvider>(context, listen: false);
     final model = context.read<BottomPlayerModel>();
     //final audio = Provider.of<PlayAudio>(context);
     return Scaffold(
@@ -156,13 +157,18 @@ class _MySongsState extends State<MySongs> with TickerProviderStateMixin,ChangeN
                                   },
                                     child: Icon(Icons.arrow_back_ios, color: Colors.white,)),
                                 SizedBox(width: 10,),
-                                Text(
-                                  widget.title,
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 30,
-                                    fontWeight: FontWeight.w700,
+                                Container(
+                                  width: MediaQuery.of(context).size.width/1.6,
+                                  height: 30,
+                                  child: Text(
+                                    playlistProvider.local_playlists[widget.index],
+                                    style: TextStyle(
+                                      fontSize: 25.0,
+                                      color: Colors.white,
+                                    ),
+
                                   ),
+
                                 ),
                               ],
                             ),
@@ -197,13 +203,17 @@ class _MySongsState extends State<MySongs> with TickerProviderStateMixin,ChangeN
               ),
               Expanded(
                 child: FutureBuilder<List<Map<String, Object>>>(
-                  future: accessPlaylist(widget.title),
+                  future: accessPlaylist(widget.playlistId),
                   builder: (context, snapshot) {
                     if (snapshot.connectionState == ConnectionState.waiting) {
+                      print("running case 1");
                       return Container();
                     } else if (snapshot.hasError) {
+                      print("running case 2");
+                      print(snapshot.error);
                       return Text('Error: ${snapshot.error}');
                     } else {
+                      print("running case 3");
                       List<Map<String, Object>>? playlistDetails = snapshot.data;
                       return ListView.builder(
                         padding: EdgeInsets.zero,
@@ -222,7 +232,7 @@ class _MySongsState extends State<MySongs> with TickerProviderStateMixin,ChangeN
                                           onPressed: ((context) {
                                             setState(() {
                                               deleteSongFromPlaylist(
-                                                  widget.title,
+                                                  widget.playlistId,
                                                   songDetails!['songTitle']
                                                       .toString());
                                             });
@@ -290,8 +300,6 @@ class _MySongsState extends State<MySongs> with TickerProviderStateMixin,ChangeN
                                         await AudioPlayerHandler().initializeAudioPlayer(songDetails['audPath'].toString());
                                         audioHandler.updateMediaItem(item);
                                         audioHandler.play();
-
-
                                       },
                                       child: ListTile(
                                         leading: FadeTransition(
@@ -324,7 +332,6 @@ class _MySongsState extends State<MySongs> with TickerProviderStateMixin,ChangeN
                                                       'verve',
                                                       stalePeriod: Duration(
                                                           days: 7),
-
                                                     ),
                                                   ),
                                                 ),
@@ -360,15 +367,41 @@ class _MySongsState extends State<MySongs> with TickerProviderStateMixin,ChangeN
                                       ),
                                     ),
                                   ),
+                                );
+                              }
+                            );
+                          }
+                        },
+                      ),
+                    ),
+              /*Expanded(
+                child: StreamBuilder<List<String>>(
+                  stream: Stream.fromFuture(YouTubeService(context).fetchPlaylistItems(playlistProvider.url, context)),
+                  builder: (context, snapshot) {
+                    if (snapshot.hasData) {
+                      //print("Snapshot: ${snapshot.data}");
+                      return ListView.builder(
+                        itemCount: snapshot.data?.length,
+                        itemBuilder: (context, index) {
+                          return ListTile(
+                            title: Text(snapshot.data![index],style: TextStyle( color: Colors.orange)),
                           );
-
-
-                        }
+                        },
+                      );
+                    } else if (snapshot.hasError) {
+                      //print("xxxxxx");
+                      return Center(
+                        child: Text('Error: ${snapshot.error}', style: TextStyle( color: Colors.orange)),
+                      );
+                    } else {
+                      //print("oooooo");
+                      return Center(
+                        child: CircularProgressIndicator(),
                       );
                     }
                   },
                 ),
-              ),
+              )*/
             ],
           ),
         ),

@@ -20,6 +20,8 @@
 // * Project Git: https://github.com/rudraveersandhu/Verve
 // *
 
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 import 'dart:math';
 import 'dart:ui';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -31,12 +33,13 @@ import 'package:persistent_bottom_nav_bar/persistent_tab_view.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:verve/models/album.dart';
 import 'package:verve/screens/my_songs.dart';
+import 'package:verve/services/youtube_service.dart';
 import 'package:verve/utilities/playlist_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:youtube_explode_dart/youtube_explode_dart.dart';
 import '../models/bottom_player.dart';
 import '../models/playlist_model.dart';
-import '../models/playlists.dart';
+
 import 'album_collection.dart';
 import 'new_playlist.dart';
 import 'dart:async';
@@ -48,26 +51,26 @@ class StartScreen extends StatefulWidget {
   State<StartScreen> createState() => _StartScreenState();
 }
 
-class _StartScreenState extends State<StartScreen>
-    with TickerProviderStateMixin {
-  List<List<dynamic>> rows = [];
-  bool isPressed = false;
-  bool isBlurred = false;
-  double opacity = 1.0;
-  double containerPosition = 0.0;
-  Map<int, bool?> isPressedMap = {};
-  String selectedPlaylist = "";
-  final StreamController<List<PlaylistModel>> _playlistVideosController =
-      StreamController<List<PlaylistModel>>();
-  final ScrollController _scrollController = ScrollController();
-  final ScrollController _scrollController2 = ScrollController();
-  TextEditingController _nameController = TextEditingController();
-  List<Video> playlistVideos = [];
-  String name = "Guest";
-  bool track1 = false;
+class _StartScreenState extends State<StartScreen> with TickerProviderStateMixin {
+  late List<String>   urlList;
+  List<Video>         playlistVideos     = [];
+  List<List<dynamic>> rows               = [];
+  Map<int, bool?>     isPressedMap       = {};
+  bool                isPressed          = false;
+  bool                isBlurred          = false;
+  bool                track1             = false;
+  double              opacity            = 1.0;
+  double              containerPosition  = 0.0;
+  String              selectedPlaylist   = "";
+  String              name               = "Guest";
 
-  late AnimationController _controller;
-  late Animation<double> _animation;
+  final StreamController<List<SongModel>> _playlistVideosController = StreamController<List<SongModel>>();
+
+  final ScrollController       _scrollController  = ScrollController();
+  final ScrollController       _scrollController2 = ScrollController();
+  final TextEditingController  _nameController    = TextEditingController();
+  late AnimationController     _controller;
+  late Animation<double>       _animation;
 
   void _onScrollEvent() {
     _scrollController.jumpTo(_scrollController2.offset);
@@ -75,35 +78,25 @@ class _StartScreenState extends State<StartScreen>
   }
 
   @override
-  void initState() {
-    //getSavedPlaylists();
-    _controller = AnimationController(
-      vsync: this,
-      duration: Duration(seconds: 1),
-    );
-    _animation = Tween(begin: 0.0, end: 1.0).animate(_controller);
-
+  initState() {
+    _controller = AnimationController(vsync: this, duration: Duration(seconds: 1),);
+    _animation  = Tween(begin: 0.0, end: 1.0).animate(_controller);
     _scrollController2.addListener(_onScrollEvent);
-
     super.initState();
   }
 
   @override
   void dispose() {
-    _scrollController.dispose();
-    _nameController.dispose();
-    _controller.dispose();
-    _scrollController2.dispose();
-    _playlistVideosController.close();
-    super.dispose();
+    _scrollController        .dispose();
+    _nameController          .dispose();
+    _controller              .dispose();
+    _scrollController2       .dispose();
+    _playlistVideosController.close  ();
+    super                    .dispose();
   }
 
   getSavedPlaylists() async {
     final box = await Hive.openBox('savedPlaylist');
-    print("##########################");
-    print("##########################");
-    print("##########################");
-
     List<String> urls = await box.get('urls') ?? <String>[];
     List<String> names = await box.get('names') ?? <String>[];
     print("urls : $urls");
@@ -151,45 +144,46 @@ class _StartScreenState extends State<StartScreen>
   }
 
   importPlaylist(String url) async {
-
     Uri uri = Uri.parse(url);
     List<String> playlistId = [];
     setState(() {
       playlistId.add(uri.queryParameters['list'].toString());
-
     });
+    print("fetching new playlist by id: $playlistId");
     await fetchData(playlistId);
-
   }
 
   Future<void> fetchData(List<String> urls) async {
-
+    //YouTubeService youtubeService = YouTubeService(context);
     var yt = YoutubeExplode();
-    List<String> url = [];
-    final nav = Provider.of<PlaylistProvider>(context, listen: false);
 
     //open box of saved playlist
-    final box = await Hive.openBox('savedPlaylist');
-
-    // call model to mutate value
-    final model = context.read<BottomPlayerModel>();
+    final box = await Hive.openBox('playlists');
 
     // get the list of saved playlist url from the box
     List<String> savedURLS = await box.get('urls') ?? <String>[];
     List<String> names = await box.get('names') ?? <String>[];
 
     if (urls.length == 1) {
+
       var playlist = await yt.playlists.get(urls[0]);
       String playlistName = playlist.title;
-        savedURLS.add(urls[0]);
-        names.add(playlistName);
-        nav.youtube_playlists.add(playlistName);
+      String playlistAuthor = playlist.author;
+      int? playlistSongCount = playlist.videoCount;
+      String playlistDescription = playlist.description;
+
+      savedURLS.add(urls[0]);
+      names.add(playlistName);
+
       await box.put('urls', savedURLS);
       await box.put('names', names);
-
+      await makePlaylist(playlistName,urls[0],playlistAuthor,playlistSongCount!, playlistDescription); // critical
+      // critical
+      await updateRecords();
     }
-    for (int i = 0; i < urls.length; i++) {
 
+    //get songs from the
+    /*for (int i = 0; i < urls.length; i++) {
       var playlist = await yt.playlists.get(urls[i]);
       List<Video> videoList = await yt.playlists.getVideos(playlist.id).toList();
 
@@ -204,10 +198,7 @@ class _StartScreenState extends State<StartScreen>
 
       for (PlaylistModel playlistModel in videoModels) {
         // Access the url property of each PlaylistModel object
-        nav.url.add(playlistModel.url);
-
-        //print(url);
-        // Do something with the url...
+        playlistProvider.url.add(playlistModel.url);
       }
 
       _playlistVideosController.add(videoModels);
@@ -216,97 +207,162 @@ class _StartScreenState extends State<StartScreen>
         model.rows = rows;
       });
       //print("Rows: $rows");
-    }
+    }*/
     yt.close();
   }
 
-  Future<void> makePlaylist(String playlistName) async {
-    final nav = Provider.of<Playlists>(context, listen: false);
-    var playlistProvider =
-        Provider.of<PlaylistProvider>(context, listen: false);
-
-    try {
-      final box = await Hive.openBox('playlists');
-      List<dynamic> playlists = box.get('playlists', defaultValue: []);
-      bool playlistExists =
-          playlists.any((playlist) => playlist['name'] == playlistName);
-
-      if (!playlistExists) {
-        setState(() {
-          nav.playlist.add(playlistName);
-          playlistProvider.updatePlaylist(nav.playlist);
-        });
-
-        // Add the new playlist
-        playlists.add({'name': playlistName, 'songs': [], 'about': ''});
-        await box.put('playlists', playlists);
-        await box.close();
-        print('Playlist $playlistName created successfully.');
-      } else {
-        print('Playlist $playlistName already exists.');
-      }
-    } catch (e) {
-      print("Error accessing Hive box: $e");
-    }
-  }
-
-  Future<void> setRecomendations(
-      String playlistName, int NumOfItems, String playlistId) async {
+  Future<void> updateRecords() async {
+    List<List<dynamic>> temprow= [];
     var yt = YoutubeExplode();
-    var playlist = await yt.playlists.get(playlistId);
-    String about = playlist.description;
-    List playlistVideos =
-        await yt.playlists.getVideos(playlist.id).take(NumOfItems).toList();
-    var playlistProvider =
-        Provider.of<PlaylistProvider>(context, listen: false);
-    final nav = Provider.of<Playlists>(context, listen: false);
     final box = await Hive.openBox('playlists');
 
-    List<dynamic> storedPlaylists = box.get('playlists', defaultValue: []);
+    // call model to mutate value
+    final model = context.read<BottomPlayerModel>();
 
-    // Find the playlist
-    var mySongsPlaylist = storedPlaylists.firstWhere(
-      (playlist) => playlist['name'] == playlistName,
-      orElse: () => {
-        'name': playlistName,
-        'songs': [],
-        'about': '',
-      },
-    );
+    // get the list of saved playlist url from the box
+    List<String> savedURLS = await box.get('urls') ?? <String>[];
+    List<String> names = await box.get('names') ?? <String>[];
 
-    // Check if the playlist name is not already in nav.playlist
-    setState(() {
-      if (!nav.playlist.contains(playlistName)) {
-        nav.playlist.add(playlistName);
-        playlistProvider.updatePlaylist(nav.playlist);
-      }
-    });
-
-    mySongsPlaylist['about'] = about;
-
-    List<dynamic> songs = mySongsPlaylist['songs'];
-
-    // Check if the song with the same ID is already in the playlist
-
-    for (int i = 0; i < NumOfItems; i++) {
-      var song = playlistVideos[i];
-
-      if (!songs.any((s) => s['vId'] == song.id.toString())) {
-        songs.add({
-          'songTitle': song.title.toString(),
-          'songAuthor': song.author.toString(),
-          'tUrl': "https://img.youtube.com/vi/${song.id}/hqdefault.jpg",
-          'vId': song.id.toString(),
-          'thumbnail': "",
-          'date': "",
-        });
-      }
+    for (int i = 0; i < savedURLS.length; i++) {
+      var playlist = await yt.playlists.get(savedURLS[i]);
+      List<Video> videoList = await yt.playlists.getVideos(playlist.id).toList();
+      //String playlistName = playlist.title;
+      List<SongModel> videoModels = videoList.map((video) {
+        return SongModel(
+          id: video.id.toString(),
+          title: video.title,
+          author: video.author,
+          url: video.thumbnails.highResUrl,
+          duration: video.duration!.inSeconds
+        );
+      }).toList();
+      temprow.add(videoModels);
     }
 
-    box.put('playlists', storedPlaylists);
-    //rows.add(storedPlaylists);
+    if (mounted) {
+      setState(() {
+        //nav.youtube_playlists.add(playlistName);
+        rows.clear();
+        rows = temprow;
+        model.rows = rows;
+        model.names = names;
+        //print(rows[0][0].id);
+      });
+    }
+    /*setState(() {
+      model.rows = rows;
+
+      //nav.playlist.add(playlistName);
+      //playlistProvider.updatePlaylistURLS(nav.playlist);
+    });*/
+    yt.close();
   }
 
+  Future<void> makePlaylist(
+      String playlistName,
+      String playlistId,
+      String playlistAuthor,
+      int playlistSongsCount,
+      String playlistDescription ) async  {
+
+        //final nav = Provider.of<Playlists>(context, listen: false);
+        var playlistProvider = Provider.of<PlaylistProvider>(context, listen: false);
+        try {
+          final box = await Hive.openBox('playlists');
+          List<dynamic> playlists = box.get('playlists', defaultValue: []);
+          bool playlistExists = playlists.any((playlist) => playlist['id'] == playlistId);
+
+          var mySongsPlaylist = playlists.firstWhere((playlist) => playlist['id'] == playlistId,
+            orElse: () => {'name': playlistName, 'songs': []},
+          );
+
+          if (!playlistExists) {
+            setState(() {
+              playlistProvider.youtube_playlists.add(playlistName);
+            });
+
+            // Add the new playlist
+            playlists.add({
+              'name': playlistName,
+              'id'  : playlistId,
+              'author': playlistAuthor,
+              'description': playlistDescription,
+              'NumOfSongs': playlistSongsCount,
+              'songs': []
+            });
+            await box.put('playlists', playlists);
+            //await box.close();
+            print('Playlist $playlistName created successfully.');
+
+            //get songs
+            //getSongs(playlistId, playlistName, playlistAuthor,playlistDescription, playlistSongsCount ,mySongsPlaylist );
+            YouTubeService youtubeService = YouTubeService(context);
+            var d = youtubeService.fetchPlaylistItems(playlistId, context);
+            print("===================== $d");
+
+          } else {
+            print('Playlist $playlistName already exists.');
+          }
+        } catch (e) {
+          print("Error accessing Hive box: $e");
+        }
+  }
+
+
+/*
+  getSongs(playlistId, playlistName, playlistAuthor, playlistDescription, playlistSongsCount,mySongsPlaylist) async {
+    final YoutubeExplode _youtube = YoutubeExplode();
+    List<String> playlistItems = [];
+    await for (var video in _youtube.playlists.getVideos(playlistId)) {
+      await addSongsToPlaylist(
+          mySongsPlaylist,
+      video.title,
+      video.author,
+      video.thumbnails.mediumResUrl,
+      '',
+      video.id.toString(),
+      video.thumbnails.mediumResUrl,
+      video.duration!.inSeconds);
+      String playlist_song = "${video.id}|${video.title}|${video.author}|${video.description}|${video.thumbnails.mediumResUrl}|${video.duration}";
+      playlistItems.add(playlist_song);
+    }
+    //var playlistProvider = Provider.of<PlaylistProvider>(context, listen: false);
+    //final nav = Provider.of<Playlists>(context, listen: false);
+
+    //final box = await Hive.openBox('playlists');
+    //List<dynamic> storedPlaylists = await box.get('playlists', defaultValue: []);
+
+
+   // var mySongsPlaylist = storedPlaylists.firstWhere((playlist) => playlist['id'] == playlistId,
+   //   orElse: () => {'name': playlistName, 'songs': []},
+   // );
+
+  }
+
+  addSongsToPlaylist(mySongsPlaylist, String songTitle, String artist, String thumb, String vId, String audPath, dur) async {
+
+    List<dynamic> songs = mySongsPlaylist['songs'];
+    int songsLength = mySongsPlaylist['NumOfSongs'];
+
+    bool isSongAlreadyPresent = songs.any((song) => song['vId'] == vId );
+    //print("Printing Data from youtube service page: ----Target playlist: $targetPlaylist");
+    //print("Printing Data from youtube service page: $storedPlaylists");
+    if (isSongAlreadyPresent) {
+      print('Song is already present in playlist.');
+    } else {
+      songs.add({
+        'songTitle': songTitle,
+        'songAuthor': artist,
+        'tUrl': thumb,
+        'vId': vId,
+        'audPath': audPath,
+        'thumbnail': thumb,
+        'duration': dur,
+      });
+      await box.put('playlists', playlists);
+    }
+  }
+*/
   void _showPlaylistImporter() {
 
     showDialog(
@@ -369,18 +425,11 @@ class _StartScreenState extends State<StartScreen>
   @override
   Widget build(BuildContext context) {
     final model = context.read<BottomPlayerModel>();
-    print(model.isCardVisible);
     _controller.forward();
     final nav = context.watch<PlaylistProvider>();
-    //var playlistProvider = Provider.of<PlaylistProvider>(context, listen: false);
-    //final ABmodel = context.read<AlbumModel>();
-
-    //print("#####################: ${model.rows}");
-    //var pp = Provider.of<PlaylistProvider>(context, listen: false);
     double screenWidth = MediaQuery.of(context).size.width;
     double containerWidth = screenWidth * 0.443;
     double containerHeight = containerWidth / 3.6;
-    //print("Container height = $containerHeight");
 
     double checkNumber(int number) {
       if (number == 1) {
@@ -397,7 +446,6 @@ class _StartScreenState extends State<StartScreen>
         return number / 2;
       }
     }
-
 
     return Material(
       child: Container(
@@ -418,6 +466,7 @@ class _StartScreenState extends State<StartScreen>
                 bool innerBoxScrolled,
               ) {
                 //nav.local_playlists.length % 2 != 0 ? nav.local_playlists.length + 1 : nav.local_playlists.length
+                //print()
                 return <Widget>[
                   SliverAppBar(
                     expandedHeight: 200 + ((containerHeight + 11) * checkNumber(nav.local_playlists.length)),
@@ -433,6 +482,7 @@ class _StartScreenState extends State<StartScreen>
                         BuildContext context,
                         BoxConstraints constraints,
                       ) {
+                        print("${(containerHeight + 12) * checkNumber(nav.local_playlists.length-2)}");
                         //("Main section height: ${((containerHeight + 10) * checkNumber(nav.local_playlists.length))}");
                         return FlexibleSpaceBar(
                           background: GestureDetector(
@@ -508,7 +558,7 @@ class _StartScreenState extends State<StartScreen>
                                             },
                                             child: Icon(
                                               CupertinoIcons.arrow_down_square,
-                                              color: Colors.orange,
+                                              color: Colors.orange.shade600,
                                               size: 29,
                                             ),
                                           ),
@@ -522,8 +572,8 @@ class _StartScreenState extends State<StartScreen>
                                   padding: const EdgeInsets.only(
                                       left: 15.0, top: 10),
                                   child: Container(
-                                    padding: EdgeInsets.zero,
                                     color: Colors.transparent,
+                                    padding: EdgeInsets.zero,
                                     child: Column(
                                       children: [
                                         Row(
@@ -636,10 +686,26 @@ class _StartScreenState extends State<StartScreen>
                                           children: [
                                             GestureDetector(
                                               onTap: () async {
+                                                selectedPlaylist = nav.local_playlists[0];
+
+
+                                                final ABmodel = Provider.of<AlbumModel>(context, listen: false);
+                                                //await _updateAlbumBgColor("model.rows[index][1].url");
+                                                getLocalPlaylistData(0);
+                                                setState(() {
+                                                  ABmodel.ab1 = 'https://d1nhio0ox7pgb.cloudfront.net/_img/g_collection_png/standard/512x512/leaf.png';
+                                                  ABmodel.ab2 = 'https://d1nhio0ox7pgb.cloudfront.net/_img/g_collection_png/standard/512x512/leaf.png';
+                                                  ABmodel.ab3 = 'https://d1nhio0ox7pgb.cloudfront.net/_img/g_collection_png/standard/512x512/leaf.png';
+                                                  ABmodel.ab4 = 'https://d1nhio0ox7pgb.cloudfront.net/_img/g_collection_png/standard/512x512/leaf.png';
+                                                  ABmodel.playlistLength = 3;
+                                                });
+                                                //print("Selected Playlist:$selectedPlaylist");
+
                                                 PersistentNavBarNavigator.pushNewScreen(
                                                   context,
-                                                  screen: MySongs(title: "My Songs"), withNavBar: true,
+                                                  screen: MySongs(playlistId: selectedPlaylist, index: 0), withNavBar: true,
                                                   pageTransitionAnimation: PageTransitionAnimation.cupertino,);
+
                                               },
                                               child: Container(
                                                 height: containerHeight,
@@ -874,25 +940,21 @@ class _StartScreenState extends State<StartScreen>
                                           ],
                                         ),
                                       ),
-
                                       Container(
-                                        //color: Colors.red,
-                                        height: (containerHeight + 12) * checkNumber(nav.local_playlists.length),/*10 is spacing between the playlist in a column*/
+                                        color: Colors.transparent,
+                                        height: (containerHeight + 12) * checkNumber(nav.local_playlists.length-2) + 65,/*12 is spacing between the playlist in a column*/
                                         //((nav.local_playlists.length == 0 ? 1 : nav.local_playlists.length)/ 2) * (125),
                                         width: MediaQuery.of(context).size.width,
                                         child: ListView.builder(
                                           padding: EdgeInsets.zero,
-                                          itemCount: (nav.local_playlists.length / 2).ceil(),
+                                          itemCount: (nav.local_playlists.length/2).ceil(),
                                           itemBuilder: (context, index) {
-                                            //print("sub section height: ${((containerHeight + 10) * checkNumber(nav.local_playlists.length))}");
-                                            final int firstItemIndex =
-                                                index * 2;
-                                            final int secondItemIndex =
-                                                index * 2 + 1;
-                                            bool mys = nav.local_playlists[index] == 'My Songs';
-                                            bool bs = nav.local_playlists[index] == 'songs';
-                                            //print("${nav.local_playlists[index]}");
-                                              return !mys && !bs ? Padding(
+                                            final int firstItemIndex = index * 2;
+                                            final int secondItemIndex = index * 2 + 1;
+                                            print("Looping index: ${nav.local_playlists.length}");
+
+                                            if(nav.local_playlists[index] != 'My Songs' ){
+                                              return Padding(
                                                 padding:
                                                 const EdgeInsets.only(
                                                     top:10,
@@ -914,6 +976,7 @@ class _StartScreenState extends State<StartScreen>
                                                         },
                                                         onTap: () async {
                                                           selectedPlaylist = nav.local_playlists[firstItemIndex];
+                                                          print('Tapped index: $firstItemIndex');
 
                                                           final ABmodel = Provider.of<AlbumModel>(context, listen: false);
                                                           //await _updateAlbumBgColor("model.rows[index][1].url");
@@ -929,7 +992,7 @@ class _StartScreenState extends State<StartScreen>
 
                                                           PersistentNavBarNavigator.pushNewScreen(
                                                             context,
-                                                            screen: MySongs(title: selectedPlaylist), withNavBar: true,
+                                                            screen: MySongs(playlistId: selectedPlaylist, index: firstItemIndex), withNavBar: true,
                                                             pageTransitionAnimation: PageTransitionAnimation.cupertino,);
                                                         },
                                                         child:
@@ -1048,22 +1111,24 @@ class _StartScreenState extends State<StartScreen>
                                                         onLongPress:
                                                             () {
                                                           setState(() {
-                                                                selectedPlaylist = nav.local_playlists[secondItemIndex];
+                                                            selectedPlaylist = nav.local_playlists[secondItemIndex];
 
-                                                                isBlurred = !isBlurred;
+                                                            isBlurred = !isBlurred;
 
-                                                                isPressedMap[secondItemIndex] = !(isPressedMap[secondItemIndex] ?? false);
-                                                              });
+                                                            isPressedMap[secondItemIndex] = !(isPressedMap[secondItemIndex] ?? false);
+                                                          });
                                                         },
                                                         onTap: () {
+                                                          print('Tapped index: $secondItemIndex');
                                                           setState(
                                                                   () {
                                                                 PersistentNavBarNavigator
                                                                     .pushNewScreen(
                                                                   context,
                                                                   screen: MySongs(
-                                                                      title:
-                                                                      nav.local_playlists[secondItemIndex]),
+                                                                      playlistId:
+                                                                      nav.local_playlists[secondItemIndex],
+                                                                      index: secondItemIndex),
                                                                   withNavBar:
                                                                   true,
                                                                   pageTransitionAnimation:
@@ -1164,8 +1229,10 @@ class _StartScreenState extends State<StartScreen>
                                                     ),
                                                   ],
                                                 ),
-                                              ) : Container();
-
+                                              );
+                                            } else {
+                                              return Container();
+                                            }
                                           },
                                         )
                                       ),
@@ -1181,689 +1248,20 @@ class _StartScreenState extends State<StartScreen>
                   ),
                 ];
               },
-              body: buildRow(),
-              /*ListView(
-                //crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Consumer<BottomPlayerModel>(
-                    builder: (context, model, _) {
-                      return Container(
-                        height: model.rows.length * 280,
-                        width: MediaQuery.of(context).size.width,
-                        child: ListView.builder(
-                          controller: _scrollController2,
-                          scrollDirection: Axis.vertical,
-                          itemCount: model.rows.length,
-                          itemBuilder: (context, rowIndex) {
-                            print("model inf: ${model.rows}");
-                            return buildRow(model.rows[rowIndex]);
-                          },
-                        ),
-                      );
+              body: Consumer<BottomPlayerModel>(
+                builder: (context, model, _) {
+                  return ListView.builder(
+                    //controller: _scrollController2,
+                    scrollDirection: Axis.vertical,
+                    itemCount: model.rows.length,
+                    itemBuilder: (context, rowIndex) {
+                      print("Model row length: ${model.rows.length}");
+                      return buildRow(rowIndex);
                     },
-                  ),
-                  ElevatedButton(
-                    onPressed: () {
-                      //Provider.of<BottomPlayerModel>(context, listen: false).addNewRow();
-                    },
-                    child: Text('Add New Row'),
-                  ),
-                ],
-              ),*/
+                  );
+                },
+              ),
             ),
-            /*
-                  Padding(
-                    padding: const EdgeInsets.only(
-                        left: 15.0, right: 15, bottom: 10),
-                    child: Text(
-                      "Top 100 in India",
-                      style: TextStyle(
-                        color: Colors.orange.shade600,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 22,
-                      ),
-                    ),
-                  ),
-                  Container(
-                    height: 195,
-                    child: FutureBuilder<List<Map<String, Object>>>(
-                      future: accessPlaylist('Top10Indian'),
-                      builder: (context, snapshot) {
-                        if (snapshot.connectionState ==
-                            ConnectionState.waiting) {
-                          return  Container();
-                        } else if (snapshot.hasError) {
-                          return Text(
-                            'Error: ${snapshot.error}',
-                            style: TextStyle(color: Colors.white),
-                          );
-                        } else {
-                          List<Map<String, Object>>? playlistDetails =
-                              snapshot.data;
-                          return ListView.builder(
-                            shrinkWrap: true,
-                            scrollDirection: Axis.horizontal,
-                            padding: EdgeInsets.zero,
-                            itemCount: playlistDetails?.length,
-                            itemBuilder: (context, index) {
-                              Map<String, Object>? songDetails =
-                              playlistDetails?[index];
-
-                              return Padding(
-                                padding: EdgeInsets.only(right: 0, left: 11),
-                                child: Column(
-                                  children: [
-                                    GestureDetector(
-                                      onTap: () async {
-                                        await _updateAlbumBgColor('https://img.youtube.com/vi/${songDetails['vId'].toString()}/sddefault.jpg');
-                                        setState(() {
-                                          ABmodel.ab1 = 'https://img.youtube.com/vi/${playlistDetails?[getRandomNumber(0, playlistDetails.length)]['vId']}/sddefault.jpg';
-                                          ABmodel.ab2 = 'https://img.youtube.com/vi/${playlistDetails?[getRandomNumber(0, playlistDetails.length)]['vId']}/sddefault.jpg';
-                                          ABmodel.ab3 = 'https://img.youtube.com/vi/${playlistDetails?[getRandomNumber(0, playlistDetails.length)]['vId']}/sddefault.jpg';
-                                          ABmodel.ab4 = 'https://img.youtube.com/vi/${playlistDetails?[getRandomNumber(0, playlistDetails.length)]['vId']}/sddefault.jpg';
-                                          ABmodel.playlistName = 'Top10Indian';
-                                          print("Start Screen: ${ playlistDetails!.length}");
-                                          ABmodel.playlistLength = playlistDetails.length;
-                                          ABmodel.albumName = "India's Top Trending";
-
-                                          //ABmodel.currentTitle = songDetails['songTitle'].toString();
-                                          //ABmodel.currentAuthor = songDetails['songAuthor'].toString();
-
-                                          //ABmodel.vId = songDetails['vId'].toString();
-                                          //ABmodel.about = songDetails['about'].toString();
-                                          //ABmodel.tUrl = songDetails['tUrl'].toString();
-
-                                        });
-
-                                        /*updateRetain(
-                                            songDetails['songTitle']
-                                                .toString(),
-                                            songDetails['songAuthor']
-                                                .toString(),
-                                            songDetails['tUrl'].toString(),
-                                            songDetails['vId'].toString(),
-                                            songDetails['tUrl'].toString());*/
-                                        PersistentNavBarNavigator
-                                            .pushNewScreen(
-                                          context,
-                                          screen: AlbumCollection(),
-                                          withNavBar: true,
-                                          pageTransitionAnimation:
-                                              PageTransitionAnimation
-                                                  .cupertino,
-                                        );
-                                      },
-                                      child: FadeTransition(
-                                        opacity: _animation,
-                                        child: Container(
-                                          width: 150.0,
-                                          height: 150.0,
-                                          decoration: BoxDecoration(
-                                            //color: Colors.grey.shade900,
-                                            borderRadius:
-                                                BorderRadius.circular(16.0),
-                                          ),
-                                          child: ClipRRect(
-                                            borderRadius:
-                                                BorderRadius.circular(10),
-                                            child: PhotoView(
-                                              imageProvider: CachedNetworkImageProvider(
-                                                songDetails!['tUrl'].toString(),
-
-                                              ),
-                                              customSize: Size(280, 280),
-                                              enableRotation: true,
-                                              gaplessPlayback: true,
-                                              backgroundDecoration: BoxDecoration(
-                                                color: Theme.of(context).canvasColor,
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                    SizedBox(
-                                      height: 3,
-                                    ),
-                                    Container(
-                                      width: 150,
-                                      child: Center(
-                                        child: Text(
-                                          songDetails['songTitle'].toString(),
-                                          maxLines: 1,
-                                          style: TextStyle(
-                                              fontWeight: FontWeight.w500,
-                                              color: Colors.white,
-                                              overflow:
-                                                  TextOverflow.ellipsis),
-                                        ),
-                                      ),
-                                    ),
-                                    Container(
-                                      child: Center(
-                                        child: Text(
-                                          songDetails['songAuthor']
-                                              .toString(),
-                                          maxLines: 1,
-                                          style: TextStyle(
-                                              fontSize: 12,
-                                              color: Colors.grey,
-                                              overflow:
-                                                  TextOverflow.ellipsis),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            },
-                          );
-                        }
-                      },
-                    ),
-                  ),
-                  SizedBox(
-                    height: 30,
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.only(
-                        left: 15.0, right: 15, bottom: 10),
-                    child: Row(
-                      children: [
-                        Text(
-                          "Latest Punjabi",
-                          style: TextStyle(
-                            color: Colors.orange.shade600,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 20,
-                          ),
-                        ),
-                        SizedBox(
-                          width: 5,
-                        ),
-                        Icon(
-                          CupertinoIcons.waveform,
-                          color: Colors.grey.shade700,
-                        )
-                      ],
-                    ),
-                  ),
-                  Container(
-                    height: 195,
-                    child: FutureBuilder<List<Map<String, Object>>>(
-                      future: accessPlaylist('Punjabi'),
-                      builder: (context, snapshot) {
-                        if (snapshot.connectionState ==
-                            ConnectionState.waiting) {
-                          return Container();
-                        } else if (snapshot.hasError) {
-                          return Text(
-                            'Error: ${snapshot.error}',
-                            style: TextStyle(color: Colors.white),
-                          );
-                        } else {
-                          List<Map<String, Object>>? playlistDetails =
-                              snapshot.data;
-
-                          return ListView.builder(
-                            shrinkWrap: true,
-                            scrollDirection: Axis.horizontal,
-                            padding: EdgeInsets.zero,
-                            itemCount: playlistDetails?.length,
-                            itemBuilder: (context, index) {
-                              Map<String, Object>? songDetails =
-                                  playlistDetails?[index];
-
-                              return Padding(
-                                padding: EdgeInsets.only(right: 0, left: 11),
-                                child: Column(
-                                  children: [
-                                    GestureDetector(
-                                      onTap: () async {
-                                        await _updateAlbumBgColor(
-                                            songDetails['tUrl'].toString());
-                                        setState(() {
-                                          ABmodel.ab1 =
-                                              'https://img.youtube.com/vi/${playlistDetails![getRandomNumber(0, playlistDetails.length)]['vId']}/hqdefault.jpg';
-                                          ABmodel.ab2 =
-                                              'https://img.youtube.com/vi/${playlistDetails[4]['vId']}/hqdefault.jpg';
-                                          ABmodel.ab3 =
-                                              'https://img.youtube.com/vi/${playlistDetails[6]['vId']}/hqdefault.jpg';
-                                          ABmodel.ab4 =
-                                              'https://img.youtube.com/vi/${playlistDetails[8]['vId']}/hqdefault.jpg';
-                                          ABmodel.playlistName = 'Punjabi';
-                                          ABmodel.playlistLength = playlistDetails.length;
-                                          ABmodel.albumName =
-                                              "Latest Punjabi releases";
-                                        });
-                                        //updateRetain(songDetails['songTitle'].toString(), songDetails['songAuthor'].toString(), songDetails['tUrl'].toString(), songDetails['vId'].toString(), songDetails['tUrl'].toString());
-                                        PersistentNavBarNavigator
-                                            .pushNewScreen(
-                                          context,
-                                          screen: AlbumCollection(),
-                                          withNavBar: true,
-                                          pageTransitionAnimation:
-                                              PageTransitionAnimation
-                                                  .cupertino,
-                                        );
-                                      },
-                                      child: FadeTransition(
-                                        opacity: _animation,
-                                        child: Container(
-                                          width: 150.0,
-                                          height: 150.0,
-                                          decoration: BoxDecoration(
-                                            color: Colors.grey.shade900,
-                                            borderRadius:
-                                                BorderRadius.circular(16.0),
-                                          ),
-                                          child: ClipRRect(
-                                            borderRadius:
-                                                BorderRadius.circular(10),
-                                            child: PhotoView(
-                                              imageProvider: CachedNetworkImageProvider(
-                                                songDetails!['tUrl'].toString(),
-
-                                              ),
-                                              customSize: Size(280, 280),
-                                              enableRotation: true,
-                                              gaplessPlayback: true,
-                                              backgroundDecoration: BoxDecoration(
-                                                color: Theme.of(context).canvasColor,
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                    SizedBox(
-                                      height: 3,
-                                    ),
-                                    Container(
-                                      width: 150,
-                                      child: Center(
-                                        child: Text(
-                                          songDetails['songTitle'].toString(),
-                                          maxLines: 1,
-                                          style: TextStyle(
-                                              fontWeight: FontWeight.w500,
-                                              color: Colors.white,
-                                              overflow:
-                                                  TextOverflow.ellipsis),
-                                        ),
-                                      ),
-                                    ),
-                                    Container(
-                                      child: Center(
-                                        child: Text(
-                                          songDetails['songAuthor']
-                                              .toString(),
-                                          maxLines: 1,
-                                          style: TextStyle(
-                                              fontSize: 12,
-                                              color: Colors.grey,
-                                              overflow:
-                                                  TextOverflow.ellipsis),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            },
-                          );
-                        }
-                      },
-                    ),
-                  ),
-                  SizedBox(
-                    height: 30,
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.only(
-                        left: 15.0, right: 15, bottom: 10),
-                    child: Row(
-                      children: [
-                        Text(
-                          "Trending today",
-                          style: TextStyle(
-                            color: Colors.orange.shade600,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 20,
-                          ),
-                        ),
-                        SizedBox(
-                          width: 5,
-                        ),
-                        Icon(
-                          CupertinoIcons.graph_circle,
-                          color: Colors.grey.shade700,
-                        )
-                      ],
-                    ),
-                  ),
-                  Container(
-                    height: 195,
-                    child: FutureBuilder<List<Map<String, Object>>>(
-                      future: accessPlaylist('Trending'),
-                      builder: (context, snapshot) {
-                        if (snapshot.connectionState ==
-                            ConnectionState.waiting) {
-                          return Container();
-                        } else if (snapshot.hasError) {
-                          return Text(
-                            'Error: ${snapshot.error}',
-                            style: TextStyle(color: Colors.white),
-                          );
-                        } else {
-                          List<Map<String, Object>>? playlistDetails =
-                              snapshot.data;
-                          return ListView.builder(
-                            shrinkWrap: true,
-                            scrollDirection: Axis.horizontal,
-                            padding: EdgeInsets.zero,
-                            itemCount: playlistDetails?.length,
-                            itemBuilder: (context, index) {
-                              Map<String, Object>? songDetails =
-                                  playlistDetails?[index];
-
-                              return Padding(
-                                padding: EdgeInsets.only(right: 0, left: 11),
-                                child: Column(
-                                  children: [
-                                    GestureDetector(
-                                      onTap: () async {
-                                        await _updateAlbumBgColor(
-                                            songDetails['tUrl'].toString());
-                                        setState(() {
-                                          ABmodel.ab1 =
-                                              'https://img.youtube.com/vi/${playlistDetails?[getRandomNumber(0, playlistDetails.length)]['vId']}/hqdefault.jpg';
-                                          ABmodel.ab2 =
-                                              'https://img.youtube.com/vi/${playlistDetails?[4]['vId']}/hqdefault.jpg';
-                                          ABmodel.ab3 =
-                                              'https://img.youtube.com/vi/${playlistDetails?[6]['vId']}/hqdefault.jpg';
-                                          ABmodel.ab4 =
-                                              'https://img.youtube.com/vi/${playlistDetails?[8]['vId']}/hqdefault.jpg';
-                                          ABmodel.playlistName = 'Trending';
-                                          ABmodel.albumName =
-                                              "Top Trending Worldwide";
-                                          ABmodel.playlistLength = playlistDetails!.length;
-
-                                          /*ABmodel.tUrl =
-                                              songDetails['tUrl'].toString();
-                                          ABmodel.currentTitle =
-                                              songDetails['songTitle']
-                                                  .toString();
-                                          ABmodel.currentAuthor =
-                                              songDetails['songAuthor']
-                                                  .toString();
-                                          ABmodel.vId =
-                                              songDetails['vId'].toString();
-                                          ABmodel.about =
-                                              songDetails['about'].toString();*/
-                                        });
-                                        /*updateRetain(
-                                            songDetails['songTitle']
-                                                .toString(),
-                                            songDetails['songAuthor']
-                                                .toString(),
-                                            songDetails['tUrl'].toString(),
-                                            songDetails['vId'].toString(),
-                                            songDetails['tUrl'].toString());*/
-                                        PersistentNavBarNavigator
-                                            .pushNewScreen(
-                                          context,
-                                          screen: AlbumCollection(),
-                                          withNavBar: true,
-                                          pageTransitionAnimation:
-                                              PageTransitionAnimation
-                                                  .cupertino,
-                                        );
-                                      },
-                                      child: FadeTransition(
-                                        opacity: _animation,
-                                        child: Container(
-                                          width: 150.0,
-                                          height: 150.0,
-                                          decoration: BoxDecoration(
-                                            color: Colors.grey.shade900,
-                                            borderRadius:
-                                                BorderRadius.circular(16.0),
-                                          ),
-                                          child: ClipRRect(
-                                            borderRadius:
-                                                BorderRadius.circular(10),
-                                            child: PhotoView(
-                                              imageProvider: CachedNetworkImageProvider(
-                                                songDetails!['tUrl'].toString(),
-
-                                              ),
-                                              customSize: Size(280, 280),
-                                              enableRotation: true,
-                                              gaplessPlayback: true,
-                                              backgroundDecoration: BoxDecoration(
-                                                color: Theme.of(context).canvasColor,
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                    SizedBox(
-                                      height: 3,
-                                    ),
-                                    Container(
-                                      width: 150,
-                                      child: Center(
-                                        child: Text(
-                                          songDetails['songTitle'].toString(),
-                                          maxLines: 1,
-                                          style: TextStyle(
-                                              fontWeight: FontWeight.w500,
-                                              color: Colors.white,
-                                              overflow:
-                                                  TextOverflow.ellipsis),
-                                        ),
-                                      ),
-                                    ),
-                                    Container(
-                                      child: Center(
-                                        child: Text(
-                                          songDetails['songAuthor']
-                                              .toString(),
-                                          maxLines: 1,
-                                          style: TextStyle(
-                                              fontSize: 12,
-                                              color: Colors.grey,
-                                              overflow:
-                                                  TextOverflow.ellipsis),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            },
-                          );
-                        }
-                      },
-                    ),
-                  ),
-                  SizedBox(
-                    height: 30,
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.only(
-                        left: 15.0, right: 15, bottom: 10),
-                    child: Row(
-                      children: [
-                        Text(
-                          "Top Romantic Hits",
-                          style: TextStyle(
-                            color: Colors.orange.shade600,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 20,
-                          ),
-                        ),
-                        SizedBox(
-                          width: 5,
-                        ),
-                        Icon(
-                          CupertinoIcons.graph_circle,
-                          color: Colors.grey.shade700,
-                        )
-                      ],
-                    ),
-                  ),
-                  Container(
-                    height: 195,
-                    child: FutureBuilder<List<Map<String, Object>>>(
-                      future: accessPlaylist('EngRom'),
-                      builder: (context, snapshot) {
-                        if (snapshot.connectionState ==
-                            ConnectionState.waiting) {
-                          return Container();
-                        } else if (snapshot.hasError) {
-                          return Text(
-                            'Error: ${snapshot.error}',
-                            style: TextStyle(color: Colors.white),
-                          );
-                        } else {
-                          List<Map<String, Object>>? playlistDetails =
-                              snapshot.data;
-                          return ListView.builder(
-                            shrinkWrap: true,
-                            scrollDirection: Axis.horizontal,
-                            padding: EdgeInsets.zero,
-                            itemCount: playlistDetails?.length,
-                            itemBuilder: (context, index) {
-                              Map<String, Object>? songDetails =
-                                  playlistDetails?[index];
-
-                              return Padding(
-                                padding: EdgeInsets.only(right: 0, left: 11),
-                                child: Column(
-                                  children: [
-                                    GestureDetector(
-                                      onTap: () async {
-                                        await _updateAlbumBgColor(
-                                            songDetails['tUrl'].toString());
-                                        setState(() {
-                                          ABmodel.ab1 =
-                                              'https://img.youtube.com/vi/${playlistDetails?[getRandomNumber(0, playlistDetails.length)]['vId']}/hqdefault.jpg';
-                                          ABmodel.ab2 =
-                                              'https://img.youtube.com/vi/${playlistDetails?[4]['vId']}/hqdefault.jpg';
-                                          ABmodel.ab3 =
-                                              'https://img.youtube.com/vi/${playlistDetails?[6]['vId']}/hqdefault.jpg';
-                                          ABmodel.ab4 =
-                                              'https://img.youtube.com/vi/${playlistDetails?[8]['vId']}/hqdefault.jpg';
-                                          ABmodel.playlistName = 'EngRom';
-                                          ABmodel.albumName =
-                                              "Romatic hits of all time";
-                                          ABmodel.playlistLength = playlistDetails!.length;
-
-                                          /*ABmodel.tUrl =
-                                              songDetails['tUrl'].toString();
-                                          ABmodel.currentTitle =
-                                              songDetails['songTitle']
-                                                  .toString();
-                                          ABmodel.currentAuthor =
-                                              songDetails['songAuthor']
-                                                  .toString();
-                                          ABmodel.vId =
-                                              songDetails['vId'].toString();
-                                          ABmodel.about =
-                                              songDetails['about'].toString();*/
-                                        });
-                                        /*updateRetain(
-                                            songDetails['songTitle']
-                                                .toString(),
-                                            songDetails['songAuthor']
-                                                .toString(),
-                                            songDetails['tUrl'].toString(),
-                                            songDetails['vId'].toString(),
-                                            songDetails['tUrl'].toString());*/
-                                        PersistentNavBarNavigator
-                                            .pushNewScreen(
-                                          context,
-                                          screen: AlbumCollection(),
-                                          withNavBar: true,
-                                          pageTransitionAnimation:
-                                              PageTransitionAnimation
-                                                  .cupertino,
-                                        );
-                                      },
-                                      child: FadeTransition(
-                                        opacity: _animation,
-                                        child: Container(
-                                          width: 150.0,
-                                          height: 150.0,
-                                          decoration: BoxDecoration(
-                                            color: Colors.grey.shade900,
-                                            borderRadius:
-                                                BorderRadius.circular(16.0),
-                                          ),
-                                          child: ClipRRect(
-                                            borderRadius:
-                                                BorderRadius.circular(10),
-                                            child: PhotoView(
-                                              imageProvider: CachedNetworkImageProvider(
-                                                songDetails!['tUrl'].toString(),
-                                              ),
-                                              customSize: Size(280, 280),
-                                              enableRotation: true,
-                                              gaplessPlayback: true,
-                                              backgroundDecoration: BoxDecoration(
-                                                color: Theme.of(context).canvasColor,
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                    SizedBox(
-                                      height: 3,
-                                    ),
-                                    Container(
-                                      width: 150,
-                                      child: Center(
-                                        child: Text(
-                                          songDetails['songTitle'].toString(),
-                                          maxLines: 1,
-                                          style: TextStyle(
-                                              fontWeight: FontWeight.w500,
-                                              color: Colors.white,
-                                              overflow:
-                                                  TextOverflow.ellipsis),
-                                        ),
-                                      ),
-                                    ),
-                                    Container(
-                                      child: Center(
-                                        child: Text(
-                                          songDetails['songAuthor']
-                                              .toString(),
-                                          maxLines: 1,
-                                          style: TextStyle(
-                                              fontSize: 12,
-                                              color: Colors.grey,
-                                              overflow:
-                                                  TextOverflow.ellipsis),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            },
-                          );
-                        }
-                      },
-                    ),
-                  ),
-                  SizedBox(
-                    height: 90,
-                  ),*/
             isBlurred ? BackdropFilter(
                     filter: ImageFilter.blur(sigmaX: 7, sigmaY: 7),
                     child: Container(
@@ -2021,148 +1419,151 @@ class _StartScreenState extends State<StartScreen>
     );
   }
 
-  Widget buildRow() {
-    final playlistProvider = context.read<PlaylistProvider>();
+  Widget buildRow(int x) {
+
+    //final playlistProvider = context.read<PlaylistProvider>();
     return Consumer<BottomPlayerModel>(
       builder: (context, model, child) {
-        return ListView.builder(
-          padding: EdgeInsets.zero,
-          itemCount: playlistProvider.youtube_playlists.length,
-          itemBuilder: (context, index) {
-            index = playlistProvider.youtube_playlists.length-index-1;
-            List<String> names = playlistProvider.youtube_playlists;
-            final ABmodel = context.watch<AlbumModel>();
-            List<dynamic> items = model.rows[ index];
-            String name = names[index];
-            return GestureDetector(
-              onTap: () async {
-                await _updateAlbumBgColor(model.rows[index][Random.secure().nextInt(3)].url);
-                setState(() {
-                  ABmodel.ab1 = model.rows[index][0].url;
-                  ABmodel.ab2 = model.rows[index][1].url;
-                  ABmodel.ab3 = model.rows[index][2].url;
-                  ABmodel.ab4 = model.rows[index][3].url;
-                  ABmodel.playlistLength = model.rows[index].length;
-                });
+        return Container(
+          color: Colors.transparent,
+          height: 270,
+          child: ListView.builder(
+            controller: _scrollController2,
+            scrollDirection: Axis.horizontal,
+            padding: EdgeInsets.zero,
+            itemCount: model.rows[x].length,
+            itemBuilder: (context, index) {
+              index = model.rows[x].length-index;
+              final ABmodel = context.watch<AlbumModel>();
+              List<dynamic> items = model.rows[x];
 
-                PersistentNavBarNavigator.pushNewScreen(
-                  context,
-                  screen: AlbumCollection(index), withNavBar: true,
-                  pageTransitionAnimation: PageTransitionAnimation.cupertino,);
-              },
-              child: Padding(
-                padding: const EdgeInsets.only(
-                    bottom: 10.0, left: 4, right: 4,top: 5),
-                child: Container(
-                  height: 260 ,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.only(left: 18.0),
-                        child: Text(name,style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 22
-                        ),maxLines: 1,
+              return GestureDetector(
+                onTap: () async {
+                  await _updateAlbumBgColor(model.rows[x][Random.secure().nextInt(3)].url);
+                  setState(() {
+                    ABmodel.ab1 = model.rows[x][0].url;
+                    ABmodel.ab2 = model.rows[x][1].url;
+                    ABmodel.ab3 = model.rows[x][2].url;
+                    ABmodel.ab4 = model.rows[x][3].url;
+                    ABmodel.playlistLength = model.rows[x].length;
+                  });
+
+                  PersistentNavBarNavigator.pushNewScreen(
+                    context,
+                    screen: AlbumCollection(x), withNavBar: true,
+                    pageTransitionAnimation: PageTransitionAnimation.cupertino,);
+                },
+                child: Padding(
+                  padding: const EdgeInsets.only(
+                      bottom: 10.0, left: 4, right: 4,top: 5),
+                  child: Container(
+                    color: Colors.transparent,
+                    height: 60 ,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.only(left: 18.0),
+                          child: Text(model.names[x],style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 22
+                          ),maxLines: 1,
+                          ),
                         ),
-                      ),
-                      Consumer<PlaylistProvider>(
-                        builder: (context, playlistProvider, child) {
-                          return Padding(
-                            padding: const EdgeInsets.all(8.0),
-                            child: Container(
-                              height: 200,
-                              width: MediaQuery.of(context).size.width,
-                              //color: Colors.white,// Adjust the height as needed
-                              child: ListView.builder(
-                                shrinkWrap: true,
-                                scrollDirection: Axis.horizontal,
-                                padding: EdgeInsets.zero,
-                                itemCount: items.length,
-                                itemBuilder: (context, index) {
-
-                                  //final video = items[index];
-                                  // Check if the video has the 'url' property
-
-                                  //print("running${playlistProvider.url.length}");
-                                  return Padding(
-                                    padding: EdgeInsets.only(right: 0, left: 11),
-                                    child: Column(
-                                      children: [
-                                        FadeTransition(
-                                          opacity: _animation,
-                                          child: Container(
-                                            width: 150.0,
-                                            height: 150.0,
-                                            decoration: BoxDecoration(
-                                              borderRadius: BorderRadius.circular(16.0),
-                                            ),
-                                            child: ClipRRect(
-                                              borderRadius: BorderRadius.circular(10),
-                                              child: PhotoView(
-                                                imageProvider: CachedNetworkImageProvider(
-                                                  items[index].url,
-                                                ),
-                                                customSize: Size(280, 280),
-                                                enableRotation: true,
-                                                gaplessPlayback: true,
-                                                backgroundDecoration: BoxDecoration(
-                                                  color: Theme.of(context).canvasColor,
+                        Consumer<PlaylistProvider>(
+                          builder: (context, playlistProvider, child) {
+                            return Padding(
+                              padding: const EdgeInsets.all(8.0),
+                              child: Container(
+                                height: 200,
+                                width: MediaQuery.of(context).size.width,
+                                //color: Colors.white,// Adjust the height as needed
+                                child: ListView.builder(
+                                  shrinkWrap: true,
+                                  scrollDirection: Axis.horizontal,
+                                  padding: EdgeInsets.zero,
+                                  itemCount: items.length,
+                                  itemBuilder: (context, index) {
+                                    //final video = items[index];
+                                    // Check if the video has the 'url' property
+                                    //print("running${playlistProvider.url.length}");
+                                    return Padding(
+                                      padding: EdgeInsets.only(right: 0, left: 11),
+                                      child: Column(
+                                        children: [
+                                          FadeTransition(
+                                            opacity: _animation,
+                                            child: Container(
+                                              width: 150.0,
+                                              height: 150.0,
+                                              decoration: BoxDecoration(
+                                                borderRadius: BorderRadius.circular(16.0),
+                                              ),
+                                              child: ClipRRect(
+                                                borderRadius: BorderRadius.circular(10),
+                                                child: PhotoView(
+                                                  imageProvider: CachedNetworkImageProvider(
+                                                    items[index].url,
+                                                  ),
+                                                  customSize: Size(280, 280),
+                                                  enableRotation: true,
+                                                  gaplessPlayback: true,
+                                                  backgroundDecoration: BoxDecoration(
+                                                    color: Theme.of(context).canvasColor,
+                                                  ),
                                                 ),
                                               ),
                                             ),
                                           ),
-                                        ),
-                                        SizedBox(
-                                          height: 3,
-                                        ),
-                                        Container(
-                                          width: 150,
-                                          child: Center(
-                                            child: Text(
-                                              items[index].title,
-                                              maxLines: 1,
-                                              style: TextStyle(
-                                                fontWeight: FontWeight.w500,
-                                                color: Colors.white,
-                                                overflow: TextOverflow.ellipsis,
+                                          SizedBox(
+                                            height: 3,
+                                          ),
+                                          Container(
+                                            width: 150,
+                                            child: Center(
+                                              child: Text(
+                                                items[index].title,
+                                                maxLines: 1,
+                                                style: TextStyle(
+                                                  fontWeight: FontWeight.w500,
+                                                  color: Colors.white,
+                                                  overflow: TextOverflow.ellipsis,
+                                                ),
                                               ),
                                             ),
                                           ),
-                                        ),
-                                        Container(
-                                          child: Center(
-                                            child: Text(
-                                              items[index].author,
-                                              maxLines: 1,
-                                              style: TextStyle(
-                                                fontSize: 12,
-                                                color: Colors.grey,
-                                                overflow: TextOverflow.ellipsis,
+                                          Container(
+                                            child: Center(
+                                              child: Text(
+                                                items[index].author,
+                                                maxLines: 1,
+                                                style: TextStyle(
+                                                  fontSize: 12,
+                                                  color: Colors.grey,
+                                                  overflow: TextOverflow.ellipsis,
+                                                ),
                                               ),
                                             ),
                                           ),
-                                        ),
-                                      ],
-                                    ),
-                                  );
-                                  return SizedBox(); // Return an empty SizedBox if 'url' is not available
-                                },
+                                        ],
+                                      ),
+                                    );
+                                  },
+                                ),
+
                               ),
-
-                            ),
-                          );},
-                      ),
-                    ],
+                            );},
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-            );
-          },
+              );
+            },
+          ),
         );
       },
     );
-
   }
 
   Future<void> _updateAlbumBgColor(String thumbnailUrl) async {
@@ -2228,6 +1629,9 @@ class _StartScreenState extends State<StartScreen>
       },
     );
   }
+
+
+
   Future<void> deletePlaylist(String playlistName) async {
     var box = await Hive.openBox('playlists');
     final nav = Provider.of<PlaylistProvider>(context, listen: false);
@@ -2252,16 +1656,25 @@ class _StartScreenState extends State<StartScreen>
     await box.close();
   }
 
-
   getLocalPlaylistData(int index) async {
     final box = await Hive.openBox('savedPlaylist');
-    var playlistProvider = Provider.of<PlaylistProvider>(context, listen: false);
-    List<String> local_names = await box.get('local_names') ?? <String>[];
-    List<List<String>> songs = await box.get('songs') ?? <String>[];
-
+    //var playlistProvider = Provider.of<PlaylistProvider>(context, listen: false);
+    //List<String> local_names = await box.get('local_names') ?? <String>[];
+    List<List<String>> songs = await box.get('songs') ?? List<List<String>>.empty();
     final model = context.read<BottomPlayerModel>();
     model.local_rows = songs[index];
+  }
 
+  Future<List<dynamic>> fetchPlaylist(url) async {
+    final response = await http.get(Uri.parse(url));
 
+    if (response.statusCode == 200) {
+      // If the server returns a 200 OK response, parse the JSON.
+      Map<String, dynamic> data = json.decode(response.body);
+      return data['items'];
+    } else {
+      // If the server did not return a 200 OK response, throw an exception.
+      throw Exception('Failed to load playlist');
+    }
   }
 }

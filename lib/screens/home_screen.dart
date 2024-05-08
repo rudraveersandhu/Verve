@@ -20,22 +20,17 @@
 // * Project Git: https://github.com/rudraveersandhu/Verve
 // *
 
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:marquee/marquee.dart';
 import 'package:persistent_bottom_nav_bar/persistent_tab_view.dart';
-import 'package:photo_view/photo_view.dart';
 import 'package:verve/customWidgets/bottom_player.dart';
-import 'package:verve/screens/player.dart';
 import 'package:verve/screens/premium_screen.dart';
 import 'package:verve/screens/search_screen.dart';
 import 'package:verve/screens/start_screen.dart';
 import 'package:provider/provider.dart';
 import '../models/bottom_player.dart';
-import '../services/play_audio.dart';
 import 'library_screen.dart';
-
+PersistentTabController bpcontroller = PersistentTabController(initialIndex: 0);
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
 
@@ -44,7 +39,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> with ChangeNotifier, TickerProviderStateMixin {
-  PersistentTabController _controller = PersistentTabController(initialIndex: 0);
+
   Duration position = Duration.zero;
 
   late AnimationController _acontroller;
@@ -64,7 +59,7 @@ class _HomeScreenState extends State<HomeScreen> with ChangeNotifier, TickerProv
 
   @override
   void dispose() {
-    _controller.dispose();
+    bpcontroller.dispose();
     _acontroller.dispose();
     super.dispose();
   }
@@ -73,7 +68,6 @@ class _HomeScreenState extends State<HomeScreen> with ChangeNotifier, TickerProv
 
   @override
   Widget build(BuildContext context) {
-    final model = context.read<BottomPlayerModel>();
     _acontroller.forward();
     return Stack(
       children: [
@@ -84,7 +78,7 @@ class _HomeScreenState extends State<HomeScreen> with ChangeNotifier, TickerProv
               width: MediaQuery.of(context).size.width,
               child: PersistentTabView(
                 context,
-                controller: _controller,
+                controller: bpcontroller,
                 screens: _buildScreens(),
                 items: _navBarsItems(),
                 confineInSafeArea: true,
@@ -108,7 +102,7 @@ class _HomeScreenState extends State<HomeScreen> with ChangeNotifier, TickerProv
               ),
             ),
             Expanded(
-              child: _buildScreens()[_controller.index], // Display current screen based on index
+              child: _buildScreens()[bpcontroller.index], // Display current screen based on index
             ),
           ],
         ),
@@ -121,7 +115,12 @@ class _HomeScreenState extends State<HomeScreen> with ChangeNotifier, TickerProv
                 padding: const EdgeInsets.only(left: 3, right: 0),
                 child: FadeTransition(
                     opacity: _animation,
-                    child: model.isCardVisible ? BottomPlayer() : Container()),
+                    child: Consumer<BottomPlayerModel>(
+                      builder: (context, model, _) {
+                        return BottomPlayer();
+                      },
+                    ),
+              ),
               ),
             ],
           ),
@@ -144,27 +143,16 @@ class _HomeScreenState extends State<HomeScreen> with ChangeNotifier, TickerProv
   List<PersistentBottomNavBarItem> _navBarsItems() {
     return [
       PersistentBottomNavBarItem(
-        icon: GestureDetector(
-            onTap: (){
-              setState(() {
-                _controller.index = 0;
-              });
-            },
-            child: Icon(
-                CupertinoIcons.house_fill,
-                size: 24)
-        ),
+        icon: Icon(
+            CupertinoIcons.house_fill,
+            size: 24),
         title: ("Home"),
         activeColorPrimary: CupertinoColors.activeOrange,
         inactiveColorPrimary: CupertinoColors.systemGrey,
       ),
       PersistentBottomNavBarItem(
         icon: GestureDetector(
-            onTap: (){
-              setState(() {
-                _controller.index = 1;
-              });
-            },
+
             child: Icon(CupertinoIcons.search, size: 24)),
         title: ("Search"),
         activeColorPrimary: CupertinoColors.activeOrange,
@@ -172,11 +160,7 @@ class _HomeScreenState extends State<HomeScreen> with ChangeNotifier, TickerProv
       ),
       PersistentBottomNavBarItem(
         icon: GestureDetector(
-            onTap: (){
-              setState(() {
-                _controller.index = 2;
-              });
-            },
+
             child: Icon(CupertinoIcons.music_albums, size: 24)),
         title: ("Library"),
         activeColorPrimary: CupertinoColors.activeOrange,
@@ -184,11 +168,11 @@ class _HomeScreenState extends State<HomeScreen> with ChangeNotifier, TickerProv
       ),
       PersistentBottomNavBarItem(
         icon: GestureDetector(
-            onTap: (){
+            /*onTap: (){
               setState(() {
                 _controller.index = 3;
               });
-            },
+            },*/
             child: Icon(CupertinoIcons.settings, size: 24)),
         title: ("Settings"),
         activeColorPrimary: CupertinoColors.activeOrange,

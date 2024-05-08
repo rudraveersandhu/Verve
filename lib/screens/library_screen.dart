@@ -55,8 +55,8 @@ class LibraryScreen extends StatefulWidget {
 class _LibraryScreenState extends State<LibraryScreen> {
   PersistentTabController _controller = PersistentTabController(initialIndex: 0);
   List<List<dynamic>> rows = [];
-  final StreamController<List<PlaylistModel>> _playlistVideosController =
-  StreamController<List<PlaylistModel>>();
+  final StreamController<List<SongModel>> _playlistVideosController =
+  StreamController<List<SongModel>>();
 
   @override
   void dispose() {
@@ -532,32 +532,33 @@ class _LibraryScreenState extends State<LibraryScreen> {
       var playlist = await yt.playlists.get(urls[i]);
       List<Video> videoList = await yt.playlists.getVideos(playlist.id).toList();
 
-      List<PlaylistModel> videoModels = await videoList.map((video) {
-        return PlaylistModel(
+      List<SongModel> songModels = await videoList.map((video) {
+        return SongModel(
           id: video.id.toString(),
           title: video.title,
           author: video.author,
           url: video.thumbnails.highResUrl,
+          duration: video.duration!.inSeconds,
         );
       }).toList();
 
-      for (PlaylistModel playlistModel in videoModels) {
+      for (SongModel songModel in songModels) {
         // Access the url property of each PlaylistModel object
-        nav.url.add(playlistModel.url);
+        nav.url.add(songModel.url);
 
         print(url);
         // Do something with the url...
       }
 
-      _playlistVideosController.add(videoModels);
-      rows.add(videoModels);
+      _playlistVideosController.add(songModels);
+      rows.add(songModels);
       setState(() {
         model.rows = rows;
       });
       //print("Rows: $rows");
     }
     yt.close();
-    ScaffoldMessenger.of(context).showSnackBar(
+    /*ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
           mainAxisAlignment:
@@ -582,7 +583,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
         Colors.green.shade500.withAlpha(200),
         duration: Duration(seconds: 3),
       ),
-    );
+    );*/
   }
 
   List<PersistentBottomNavBarItem> _navBarsItems() {

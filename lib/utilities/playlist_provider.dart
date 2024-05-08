@@ -38,8 +38,13 @@ class PlaylistProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  void updatePlaylist(List<String> newPlaylist) {
+  void updateLocalPlaylist(List<String> newPlaylist) {
     _local_playlists = newPlaylist;
+    notifyListeners();
+  }
+
+  void updateYoutubePlaylist(List<String> newPlaylist) {
+    _youtube_playlists = newPlaylist;
     notifyListeners();
   }
 

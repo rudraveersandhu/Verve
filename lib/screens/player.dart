@@ -99,6 +99,35 @@ class _PlayerState extends State<Player> with TickerProviderStateMixin {
     super.dispose();
   }
 
+  Future<void> deleteSongFromPlaylist(String playlistName, String songName) async {
+    var box = await Hive.openBox('playlists');
+    List<dynamic> playlistsData = box.get('playlists', defaultValue: []) ?? [];
+    List<Map<String, dynamic>> playlists =
+    List<Map<String, dynamic>>.from(playlistsData.map(
+          (item) => Map<String, dynamic>.from(item as Map<dynamic, dynamic>),
+    ));
+
+    int playlistIndex =
+    playlists.indexWhere((playlist) => playlist['name'] == playlistName);
+
+    if (playlistIndex != -1) {
+      int songIndex = playlists[playlistIndex]['songs']
+          .indexWhere((song) => song['songTitle'] == songName);
+
+      if (songIndex != -1) {
+        playlists[playlistIndex]['songs'].removeAt(songIndex);
+        await box.put('playlists', playlists);
+
+      } else {
+        print('Song $songName not found in playlist $playlistName.');
+      }
+    } else {
+      print('Playlist $playlistName not found.');
+    }
+
+    await box.close();
+  }
+
   Color convertStringToColor(String colorString) {
     String hexString = colorString
         .replaceAll("Color(", "")
@@ -1148,50 +1177,55 @@ class _PlayerState extends State<Player> with TickerProviderStateMixin {
       String artist,
       String thumb,
       String audPath,
-      String tempUrl,
       String vId,
+      String tempUrl,
       int dur) async {
-    var playlistProvider =
-        Provider.of<PlaylistProvider>(context, listen: false);
-    final nav = Provider.of<Playlists>(context, listen: false);
     final box = await Hive.openBox('playlists');
 
     List<dynamic> storedPlaylists = box.get('playlists', defaultValue: []);
+    bool playlistExists = storedPlaylists.any((playlist) => playlist['name'] == playlistName);
 
-    var mySongsPlaylist = storedPlaylists.firstWhere(
-      (playlist) => playlist['name'] == playlistName,
-      orElse: () => {'name': playlistName, 'songs': []},
-    );
+    if(playlistExists){
+      var mySongsPlaylist = storedPlaylists.firstWhere(
+            (playlist) => playlist['name'] == playlistName,
+        orElse: () => {
+          'name': '',
+          'songs': []
+        },
+      );
 
-    List<dynamic> songs = mySongsPlaylist['songs'];
+      List<dynamic> songs = mySongsPlaylist['songs'];
+      bool isSongAlreadyPresent = songs.any((song) =>
+      song['songTitle'] == songTitle && song['songAuthor'] == artist);
+      if (isSongAlreadyPresent) {
+        print('Song is already present in $playlistName playlist.');
+      } else {
+        songs.add({
+          'songTitle': songTitle,
+          'songAuthor': artist,
+          'tUrl': tempUrl,
+          'vId': vId,
+          'audPath': audPath,
+          'thumbnail': thumb,
+          'duration': dur,
+        });
 
-    bool isSongAlreadyPresent = songs.any((song) =>
-        song['songTitle'] == songTitle && song['songAuthor'] == artist);
+        await box.put('playlists', storedPlaylists);
+        await box.close();
 
-    if (isSongAlreadyPresent) {
-      print('Song is already present in $playlistName playlist.');
-    } else {
-      songs.add({
-        'songTitle': songTitle,
-        'songAuthor': artist,
-        'tUrl': thumb,
-        'vId': vId,
-        'audPath': audPath,
-        'thumbnail': thumb,
-        'duration': dur,
-      });
-
-      box.put('playlists', storedPlaylists);
-      await box.close();
-
-      setState(() {
+        /* setState(() {
         if (!nav.playlist.contains(playlistName)) {
           nav.playlist.add(playlistName);
-          playlistProvider.updatePlaylist(nav.playlist);
+          playlistProvider.updateLocalPlaylist(nav.playlist);
         }
-      });
+      });*/
+
+
+      }
 
       print('Song added to "My Songs" playlist successfully.');
+    }else{
+      print("PLaylist doesnt exist");
     }
   }
 
@@ -1288,7 +1322,8 @@ class _PlayerState extends State<Player> with TickerProviderStateMixin {
                   return ListTile(
                           visualDensity:
                               VisualDensity(horizontal: 0, vertical: -4),
-                          onTap: () {
+                          onTap: () async {
+                            //await deleteSongFromPlaylist('My Songs',model.currentTitle);
                             addToPlaylist(
                                 nav.playlist[index],
                                 model.currentTitle,

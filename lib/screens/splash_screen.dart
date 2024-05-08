@@ -32,7 +32,7 @@ import '../models/playlist_model.dart';
 import '../models/playlists.dart';
 import '../models/bottom_player.dart';
 import '../services/download_video.dart';
-import '../services/play_audio.dart';
+import '../services/youtube_service.dart';
 import '../utilities/playlist_provider.dart';
 
 
@@ -54,13 +54,12 @@ class _SplashScreenState extends State<SplashScreen> {
 
   @override
   initState() {
-    fetchData();
-    makePlaylist('My Songs');
-    makePlaylist('blank');
-    fetchLocalPlaylists();
-
-    readLastSong();
     getName();
+    makePlaylist('My Songs','vjv_dsc_Sdc_SDc_Dvds_Vd');
+    makePlaylist('blank','oiugh_isdfvj_kjhs_vcj_sd');
+    fetchYTPLData();
+    fetchLPData();
+    readLastSong();
 
     Future.delayed(
         const Duration(seconds: 3)).then((value) => Navigator.pushReplacement(context, MaterialPageRoute(
@@ -71,36 +70,46 @@ class _SplashScreenState extends State<SplashScreen> {
 
   }
 
-  Future<void> fetchLocalPlaylists() async {
-    final box = await Hive.openBox('savedPlaylist');
+  /*Future<void> fetchYTPlaylists() async {
+    final box = await Hive.openBox('playlists');
+    List<dynamic> storedPlaylists = await box.get('playlists', defaultValue: []);
     var playlistProvider = Provider.of<PlaylistProvider>(context, listen: false);
     //final nav = Provider.of<PlaylistProvider>(context, listen: false);
 
     // get the list of local playlists and their names
-    List<String> local_names = await box.get('local_names') ?? <String>[];
-    print("local saved playlist length: ${local_names.length}");
-    for(int i = 0; i < local_names.length; i++){
-      playlistProvider.local_playlists.add(local_names[i].toString());
+    List<String> playlist_names = await box.get('names') ?? <String>[];
+    List<String> playlist_urls = await box.get('urls') ?? <String>[];
+
+    for(int i = 0; i < playlist_names.length; i++){
+      playlistProvider.local_playlists.add(playlist_names[i].toString());
+
     }
 
+    for(int i = 0; i < playlist_urls.length; i++){
+      await makePlaylist(playlist_names[i], playlist_urls[i]);
+    }
 
-    /*List<String> songs = await box.get('songs') ?? <String>[];
+    var targetPlaylist = storedPlaylists.firstWhere(
+          (playlist) => playlist['id'] == playlist_urls[0],
+      orElse: () => <String, Object>{},
+    );
 
+    print("Splash Screen: Target playlist: ${storedPlaylists}");
+    print("Splash Screen: Playlist urls: ${playlist_urls}");
 
+    //List<String> songs = await box.get('songs') ?? <String>[];
+    //await box.put('local_names', local_names);
+    //await box.put('songs', songs);
 
-    await box.put('local_names', local_names);
-    await box.put('songs', songs);
+  }*/
 
-
-*/
-  }
-
-  Future<void> fetchData() async {
+  Future<void> fetchYTPLData() async {
+    YouTubeService youtubeService = YouTubeService(context);
     var yt = YoutubeExplode();
     final playlists = Provider.of<Playlists>(context, listen: false);
     final nav = Provider.of<PlaylistProvider>(context, listen: false);
     //open box of saved playlist
-    final box = await Hive.openBox('savedPlaylist');
+    final box = await Hive.openBox('playlists');
 
     // call model to mutate value
     final model = context.read<BottomPlayerModel>();
@@ -109,26 +118,28 @@ class _SplashScreenState extends State<SplashScreen> {
     List<String> savedURLS = await box.get('urls') ?? <String>[];
     List<String> names = await box.get('names') ?? <String>[];
 
-
+    nav.updateUrl(savedURLS);
+    model.names = names;
 
     for (int i = 0; i < savedURLS.length; i++) {
+
       var playlist = await yt.playlists.get(savedURLS[i]);
       List<Video> videoList = await yt.playlists.getVideos(playlist.id).toList();
+
       String playlistName = playlist.title;
-      List<PlaylistModel> videoModels = videoList.map((video) {
-        return PlaylistModel(
+      List<SongModel> songModels = await videoList.map((video) {
+        return SongModel(
           id: video.id.toString(),
           title: video.title,
           author: video.author,
-          url: video.thumbnails.mediumResUrl,
+          url: video.thumbnails.highResUrl,
+          duration: video.duration!.inSeconds,
         );
       }).toList();
 
-      rows.add(videoModels);
+      rows.add(songModels);
       nav.youtube_playlists.add(playlistName);
     }
-
-
 
     if (mounted) {
       setState(() {
@@ -147,7 +158,31 @@ class _SplashScreenState extends State<SplashScreen> {
     yt.close();
   }
 
-  getHivePlaylist() async {
+  Future<void> fetchLPData() async {
+    final nav = Provider.of<Playlists>(context, listen: false);
+    var playlistProvider = Provider.of<PlaylistProvider>(context, listen: false);
+    print("oooooooooo");
+    final box = await Hive.openBox('playlists');
+    print("kkkkkkkkkk");
+    List<dynamic> storedPlaylists = box.get('local_playlists', defaultValue: []);
+    //bool playlistExists = storedPlaylists.any((playlist) => playlist['name'] == playlistName);
+    List<String> local_names = await box.get('local_names') ?? <String>[];
+    print("length of names: ${local_names.length}");
+    for(int i = 0; i < local_names.length; i++){
+      nav.playlist.add(local_names[i]);
+      /*List<dynamic> songs = mySongsPlaylist['songs'];
+      var song = songs[i];
+      List<SongModel> songModels = await songs.map((video) {return SongModel(id: video.id.toString(),title: song['songTitle'],author: song['songAuthor'],url: song['tUrl'],duration: song['duration'],);}).toList();temprow.add(songModels);*/
+      setState(() {
+        playlistProvider.updateLocalPlaylist(nav.playlist);
+      });
+      await box.put('local_names', local_names);
+      await box.put('playlists', storedPlaylists);
+      // access each value of song by using song['value name'] then add it to the
+    }
+  }
+
+  /*getHivePlaylist() async {
     final box = await Hive.openBox('savedPlaylist');
     List<String> urls = await box.get('urls') ?? <String>[];
     List<String> names = await box.get('names') ?? <String>[];
@@ -210,7 +245,7 @@ class _SplashScreenState extends State<SplashScreen> {
 
     //yt.close();
       //print("CCCCCCCC: ${playlist.videoCount?.toInt()}");
-  }
+  }*/
 
   getName() async {
     final model = context.read<BottomPlayerModel>();
@@ -230,118 +265,42 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    getPlaylists();
+    //getPlaylists();
   }
 
-  Future<void> setRecomendations(String playlistId) async {
-
-    var yt = YoutubeExplode();
-    var playlist = await yt.playlists.get(playlistId);
-    int? vidCount = playlist.videoCount;
-    String playlistName = playlist.title;
-    String about = playlist.description;
-    List playlistVideos = await yt.playlists.getVideos(playlist.id).toList();
-
-    var playlistProvider = Provider.of<PlaylistProvider>(context, listen: false);
-
-    final nav = Provider.of<Playlists>(context, listen: false);
-    final box = await Hive.openBox('playlists');
-
-    List<dynamic> storedPlaylists = box.get('playlists', defaultValue: []);
-
-    // Find the playlist
-    var mySongsPlaylist = storedPlaylists.firstWhere(
-          (playlist) => playlist['name'] == playlistName,
-      orElse: () =>
-      {
-        'name': playlistName,
-        'songs': [],
-        'about': about,
-      },
-    );
-
-    // Check if the playlist name is not already in nav.playlist
-    setState(() {
-      if (!nav.playlist.contains(playlistName)) {
-        nav.playlist.add(playlistName);
-        playlistProvider.updatePlaylist(nav.playlist);
-      }
-    });
-
-    mySongsPlaylist['about'] = about;
-    mySongsPlaylist['name'] = playlistName;
-
-    List<dynamic> songs = mySongsPlaylist['songs'];
-
-    // Check if the song with the same ID is already in the playlist
-
-      for (int i = 0; i < vidCount!; i++) {
-        var song = playlistVideos[i];
-
-        if (!songs.any((s) => s['vId'] == song.id.toString())) {
-          songs.add({
-            'songTitle': song.title.toString(),
-            'songAuthor': song.author.toString(),
-            'tUrl': "https://img.youtube.com/vi/${song.id}/hqdefault.jpg",
-            'vId': song.id.toString(),
-            'thumbnail': "",
-            'date': "",
-          });
-        }
-      }
-
-    box.put('playlists', storedPlaylists);
-      print("playlist: $storedPlaylists");
-  }
-
-
-  getPlaylists() async {
-    var playlistProvider = Provider.of<PlaylistProvider>(context, listen: false);
-    final nav = Provider.of<Playlists>(context, listen: false);
-
-    try {
-      final box = await Hive.openBox('playlists');
-      List<dynamic> playlists = box.get('playlists', defaultValue: []);
-      List<String> playlistNames = playlists.map((playlist) => playlist['name'].toString()).toList();
-
-      setState(() {
-        nav.playlist = playlistNames;
-        playlistProvider.updatePlaylist(nav.playlist);
-      });
-
-
-      return playlistNames;
-    } catch (e) {
-      print("Error accessing Hive box: $e");
-      return [];
-    }
-  }
-
-
-
-  Future<void> makePlaylist(String playlistName) async {
-    final nav = Provider.of<Playlists>(context, listen: false);
+  Future<void> makePlaylist(String playlistName, String playlistId) async {
+    final model  = context.read<BottomPlayerModel>();
+    final nav    = Provider.of<Playlists>(context, listen: false);
     var playlistProvider = Provider.of<PlaylistProvider>(context, listen: false);
 
     try {
       final box = await Hive.openBox('playlists');
       List<dynamic> playlists = box.get('playlists', defaultValue: []);
-      bool playlistExists = playlists.any((playlist) => playlist['name'] == playlistName);
+      bool playlistExists = playlists.any((playlist) => playlist['id'] == playlistId);
 
       if (!playlistExists) {
         setState(() {
-          nav.playlist.add(playlistName);
-          playlistProvider.updatePlaylist(nav.playlist);
+
+          if(playlistId.substring(0, 2) == 'PL'){
+            nav.playlist.add(playlistId);
+            playlistProvider.updateYoutubePlaylist(nav.playlist);
+          }else{
+            nav.playlist.add(playlistName);
+            playlistProvider.updateLocalPlaylist(nav.playlist);
+          }
+
         });
 
         // Add the new playlist
         playlists.add({
           'name': playlistName,
-          'songs': [],
-          'about' : ''
+          'id'  : playlistId,
+          'author': model.user,
+          'description': 'playlistDescription',
+          'NumOfSongs': 0,
+          'songs': []
         });
         await box.put('playlists', playlists);
-        await box.close();
         print('Playlist $playlistName created successfully.');
       } else {
         print('Playlist $playlistName already exists.');
@@ -349,68 +308,7 @@ class _SplashScreenState extends State<SplashScreen> {
     } catch (e) {
       print("Error accessing Hive box: $e");
     }
-    /*try {
-      final box = await Hive.openBox('savedPlaylist');
-      List<String> names = await box.get('local_names') ?? <String>[];
-      List<String> songs = await box.get('songs') ?? <String>[];
-
-      bool playlistExists = names.any((playlist) => playlist == playlistName);
-      print(playlistExists);
-
-      if (!playlistExists) {
-        setState(() {
-          names.add(playlistName);
-          nav.playlist.add(playlistName);
-          playlistProvider.updatePlaylist(nav.playlist);
-        });
-      } else {
-        print('Playlist $playlistName already exists.');
-      }
-    } catch (e) {
-      print("Error accessing Hive box: $e");
-    }*/
   }
-
-  /*makePlaylistFile() async {
-    //final box = await Hive.openBox('playlists');
-    //box.delete('playlists',);
-    box.put('playlists', [
-      {
-        'name': 'My Songs',
-        'songs': [
-          //{'songTitle': 'CALIFORNIA LOVE (Official Video) Cheema Y | Gur Sidhu | New Punjabi Song 2023', 'songAuthor': 'Brown Town Music', 'tUrl': 'https://img.youtube.com/vi/rSxTumD4kew/hqdefault.jpg', 'vId': 'rSxTumD4kew'},
-          //{'songTitle': 'Song 2', 'songAuthor': 'Author 2', 'tUrl': 'URL 2', 'vId': 'VideoID 2'},
-        ],
-      },
-    ]);
-    //printPlaylist();
-  }*/
-
-  /*printPlaylist() async {
-
-    final box = await Hive.openBox('playlists');
-    List<dynamic> storedPlaylists = box.get('playlists', defaultValue: []);
-
-
-    for (var playlist in storedPlaylists) {
-
-      String playlistName = playlist['name'];
-      //print('Playlist Name: $playlistName');
-
-
-      List<dynamic> songs = playlist['songs'];
-      for (var song in songs) {
-
-        String songTitle = song['songTitle'];
-        String songAuthor = song['songAuthor'];
-        String tUrl = song['tUrl'];
-        String vId = song['vId'];
-
-        //print('Song Title: $songTitle, Author: $songAuthor, URL: $tUrl, Video ID: $vId');
-      }
-    }
-
-  }*/
 
   Color convertStringToColor(String colorString) {
     String hexString = colorString.replaceAll("Color(", "").replaceAll(")", "").replaceAll("0x", "");
@@ -517,6 +415,4 @@ class _SplashScreenState extends State<SplashScreen> {
       ),
     );
   }
-
-
 }

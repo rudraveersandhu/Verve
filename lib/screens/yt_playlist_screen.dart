@@ -19,13 +19,13 @@ import '../utilities/playlist_provider.dart';
 import 'album_collection.dart';
 
 class YouTubePlaylistsScreen extends StatefulWidget {
-  const YouTubePlaylistsScreen({super.key});
+  YouTubePlaylistsScreen({super.key});
 
   @override
   State<YouTubePlaylistsScreen> createState() => _YouTubePlaylistsScreenState();
 }
 
-class _YouTubePlaylistsScreenState extends State<YouTubePlaylistsScreen> {
+class _YouTubePlaylistsScreenState extends State<YouTubePlaylistsScreen> with ChangeNotifier {
   List<List<dynamic>> rows = [];
   int check = 0;
 
@@ -86,15 +86,12 @@ class _YouTubePlaylistsScreenState extends State<YouTubePlaylistsScreen> {
   }
 
   importPlaylist(String url) async {
-
     Uri uri = Uri.parse(url);
     List<String> playlistId = [];
     setState(() {
       playlistId.add(uri.queryParameters['list'].toString());
-
     });
     await fetchData(playlistId);
-
   }
 
 
@@ -122,12 +119,11 @@ class _YouTubePlaylistsScreenState extends State<YouTubePlaylistsScreen> {
                 height: MediaQuery.of(context).size.height - 355,
                 child: check == 1 ? buildTiles()
                     : Container(
-
+                  color: Colors.transparent,
                   child: Center(
                     child: Column(
                       mainAxisAlignment:MainAxisAlignment.center,
                       children: [
-
                         GestureDetector(
                           onTap: (){
                             _showPlaylistImporter();
@@ -150,8 +146,6 @@ class _YouTubePlaylistsScreenState extends State<YouTubePlaylistsScreen> {
                             fontSize: 20,
                             fontWeight: FontWeight.w300
                         ),),
-
-
                       ],
                     ),
                   ),
@@ -167,11 +161,10 @@ class _YouTubePlaylistsScreenState extends State<YouTubePlaylistsScreen> {
   Widget buildTiles() {
     check = 1;
     final ABmodel = context.watch<AlbumModel>();
-    final nav = Provider.of<PlaylistProvider>(context, listen: false);
+    //final nav = Provider.of<PlaylistProvider>(context, listen: false);
     final model = context.read<BottomPlayerModel>();
     return Consumer<PlaylistProvider>(
       builder: (context, playlistProvider, child) {
-
         return ListView.builder(
             padding: EdgeInsets.zero,
             itemCount: playlistProvider.youtube_playlists.length,
@@ -217,18 +210,7 @@ class _YouTubePlaylistsScreenState extends State<YouTubePlaylistsScreen> {
                         children: [
                           SlidableAction(
                             onPressed: ((context) async {
-                              final box = await Hive.openBox('savedPlaylist');
-                              List<String> savedURLS = await box.get('urls') ?? <String>[];
-                              List<String> names = await box.get('names') ?? <String>[];
-
-                              setState(() {
-                                model.rows.removeAt(index);
-                                names.removeAt(index);
-                                savedURLS.removeAt(index);
-                                playlistProvider.youtube_playlists.removeAt(index);
-                              });
-                              await box.put('urls', savedURLS);
-                              await box.put('names', names);
+                              deleteYTplaylist(index);
                               /*
                               PersistentNavBarNavigator.pushNewScreen(
                                 context,
@@ -346,18 +328,19 @@ class _YouTubePlaylistsScreenState extends State<YouTubePlaylistsScreen> {
       List<Video> videoList =
           await yt.playlists.getVideos(playlist.id).toList();
 
-      List<PlaylistModel> videoModels = videoList.map((video) {
-        return PlaylistModel(
+      List<SongModel> songModels = await videoList.map((video) {
+        return SongModel(
           id: video.id.toString(),
           title: video.title,
           author: video.author,
-          url: video.thumbnails.mediumResUrl,
+          url: video.thumbnails.highResUrl,
+          duration: video.duration!.inSeconds,
         );
       }).toList();
 
       //_playlistVideosController.add(videoModels);
-      rows.add(videoModels);
-      print("Rows: $rows");
+      rows.add(songModels);
+
     }
 
     //final nav = Provider.of<Playlists>(context, listen: false);
@@ -373,6 +356,26 @@ class _YouTubePlaylistsScreenState extends State<YouTubePlaylistsScreen> {
     });
 
     yt.close();
+  }
+
+  deleteYTplaylist(int index) async {
+    final model = context.read<BottomPlayerModel>();
+    final nav = Provider.of<PlaylistProvider>(context, listen: false);
+    final box = await Hive.openBox('savedPlaylist');
+    List<String> savedURLS = await box.get('urls') ?? <String>[];
+    List<String> names = await box.get('names') ?? <String>[];
+
+    setState(() {
+      model.rows.removeAt(index);
+      names.removeAt(index);
+      savedURLS.removeAt(index);
+      nav.youtube_playlists.removeAt(index);
+      notifyListeners();
+    });
+    await box.put('urls', savedURLS);
+    await box.put('names', names);
+    fetchData(savedURLS);
+
   }
 
   Future<void> deletePlaylist(String playlistName) async {
@@ -414,4 +417,5 @@ class _YouTubePlaylistsScreenState extends State<YouTubePlaylistsScreen> {
       ABmodel.cardBackgroundColor = paletteGenerator.dominantColor!.color;
     });
   }
+
 }

@@ -156,8 +156,8 @@ class _MyPlaylistsScreenState extends State<MyPlaylistsScreen> {
                                     .pushNewScreen(
                                   context,
                                   screen: MySongs(
-                                      title: nav
-                                          .local_playlists[index]),
+                                      playlistId: nav
+                                          .local_playlists[index], index: index),
                                   withNavBar:
                                   true,
                                   pageTransitionAnimation:

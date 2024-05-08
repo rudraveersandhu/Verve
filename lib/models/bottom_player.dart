@@ -36,7 +36,7 @@ class BottomPlayerModel extends ChangeNotifier {
   bool playButtonOn = false;
   List<List<dynamic>> rows = [];
   List<String> local_rows = [];
-
+  List<String> names = [];
 
   void updateData({
     required bool isCardVisible,
@@ -52,6 +52,7 @@ class BottomPlayerModel extends ChangeNotifier {
     required bool playButtonOn,
     required List<List<dynamic>> rows,
     required List<String> local_rows,
+    required List<String> names,
 
   }) {
     this.isCardVisible = isCardVisible;
@@ -67,6 +68,7 @@ class BottomPlayerModel extends ChangeNotifier {
     this.playButtonOn =playButtonOn;
     this.rows = rows;
     this.local_rows = local_rows;
+    this.names = names;
     notifyListeners();
   }
 }
