@@ -23,7 +23,8 @@
 import 'package:audio_service/audio_service.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:marquee/marquee.dart';
+import 'package:marquee_text/marquee_text.dart';
+
 import 'package:photo_view/photo_view.dart';
 import 'package:provider/provider.dart';
 import 'package:rxdart/rxdart.dart';
@@ -156,32 +157,18 @@ class _BottomPlayerState extends State<BottomPlayer> {
                                                   ),
                                                 ],
                                               ),
-                                              child: Marquee(
-                                                text: snapshot
-                                                    .data!
-                                                    .mediaItem!
-                                                    .title,
-                                                style: TextStyle(
-                                                  fontSize: 14.0,
-                                                  color:
-                                                  Colors.white,
+                                              child : MarqueeText(
+                                                text: TextSpan(
+                                                  text: snapshot
+                                                      .data!
+                                                      .mediaItem!
+                                                      .title,
                                                 ),
-                                                scrollAxis:
-                                                Axis.horizontal,
-                                                crossAxisAlignment:
-                                                CrossAxisAlignment
-                                                    .start,
-                                                blankSpace: 20.0,
-                                                velocity: 40.0,
-                                                pauseAfterRound:
-                                                Duration(
-                                                    seconds: 1),
-                                                startPadding: 10.0,
-                                                accelerationDuration:
-                                                Duration(
-                                                    seconds: 2),
-                                                accelerationCurve:
-                                                Curves.linear,
+                                                style: TextStyle(
+                                                  fontSize: 14,
+                                                  color: Colors.white,
+                                                ),
+                                                speed: 25,
                                               ),
                                             ),
                                           ),
@@ -418,7 +405,7 @@ class _BottomPlayerState extends State<BottomPlayer> {
                                                     ),
                                                   ],
                                                 ),
-                                                child: Marquee(
+                                                /* child: Marquee(
                                                   text: model.currentTitle,
                                                   style: TextStyle(
                                                     fontSize: 14.0,
@@ -441,7 +428,7 @@ class _BottomPlayerState extends State<BottomPlayer> {
                                                       seconds: 2),
                                                   accelerationCurve:
                                                   Curves.linear,
-                                                ),
+                                                ),*/
                                               ),
                                             ),
                                             Expanded(

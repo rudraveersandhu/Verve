@@ -6,7 +6,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:hive_flutter/adapters.dart';
 import 'package:palette_generator/palette_generator.dart';
-import 'package:persistent_bottom_nav_bar/persistent_tab_view.dart';
+import 'package:persistent_bottom_nav_bar_v2/persistent_bottom_nav_bar_v2.dart';
+
 import 'package:provider/provider.dart';
 import 'package:verve/screens/start_screen.dart';
 import 'package:youtube_explode_dart/youtube_explode_dart.dart';
@@ -196,13 +197,12 @@ class _YouTubePlaylistsScreenState extends State<YouTubePlaylistsScreen> with Ch
                                     songDetails['tUrl'].toString(),
                                     songDetails['vId'].toString(),
                                     songDetails['tUrl'].toString());*/
-                      PersistentNavBarNavigator.pushNewScreen(
+                      pushScreen(
                         context,
                         screen: AlbumCollection(index),
                         withNavBar: true,
-                        pageTransitionAnimation:
-                            PageTransitionAnimation.cupertino,
                       );
+
                     },
                     child: Slidable(
                       endActionPane: ActionPane(

@@ -22,15 +22,17 @@
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:persistent_bottom_nav_bar/persistent_tab_view.dart';
+import 'package:persistent_bottom_nav_bar_v2/persistent_bottom_nav_bar_v2.dart';
+
 import 'package:verve/customWidgets/bottom_player.dart';
 import 'package:verve/screens/premium_screen.dart';
 import 'package:verve/screens/search_screen.dart';
 import 'package:verve/screens/start_screen.dart';
 import 'package:provider/provider.dart';
+import '../customWidgets/custom_nav_bar.dart';
 import '../models/bottom_player.dart';
 import 'library_screen.dart';
-PersistentTabController bpcontroller = PersistentTabController(initialIndex: 0);
+
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
 
@@ -39,7 +41,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> with ChangeNotifier, TickerProviderStateMixin {
-
+  PersistentTabController bpcontroller = PersistentTabController(initialIndex: 0);
   Duration position = Duration.zero;
 
   late AnimationController _acontroller;
@@ -77,33 +79,81 @@ class _HomeScreenState extends State<HomeScreen> with ChangeNotifier, TickerProv
               height: MediaQuery.of(context).size.height,
               width: MediaQuery.of(context).size.width,
               child: PersistentTabView(
-                context,
                 controller: bpcontroller,
-                screens: _buildScreens(),
-                items: _navBarsItems(),
-                confineInSafeArea: true,
                 backgroundColor: Colors.black,
+
+
+                //backgroundColor: Colors.black,
                 handleAndroidBackButtonPress: true,
                 resizeToAvoidBottomInset: true,
                 stateManagement: true,
-                hideNavigationBarWhenKeyboardShows: true,
                 popAllScreensOnTapOfSelectedTab: true,
                 popActionScreens: PopActionScreensType.all,
-                itemAnimationProperties: ItemAnimationProperties(
-                  duration: Duration(milliseconds: 200),
-                  curve: Curves.ease,
-                ),
+
                 screenTransitionAnimation: ScreenTransitionAnimation(
-                  animateTabTransition: true,
                   curve: Curves.ease,
                   duration: Duration(milliseconds: 200),
                 ),
-                navBarStyle: NavBarStyle.style12,
+                  /*navBarBuilder: (navBarConfig) =>
+                      Style10BottomNavBar(
+                          navBarConfig: navBarConfig,
+                        itemAnimationProperties: ItemAnimation(),
+                      ),*/
+                navBarBuilder: (navBarConfig) => CustomNavBar(
+                  navBarConfig: navBarConfig,
+                ),
+                tabs: [
+                PersistentTabConfig(
+
+                  screen: StartScreen(),
+                  item: ItemConfig(
+                    icon: Icon(CupertinoIcons.house_fill,
+                        size: 24),
+                    title: "Home",
+                      activeForegroundColor: CupertinoColors.activeOrange,
+                      inactiveForegroundColor: Colors.grey,
+                    inactiveBackgroundColor: Colors.black,
+                    activeColorSecondary: Colors.orange
+
+                  ),
+                ),
+                PersistentTabConfig(
+                  screen: SearchScreen(),
+                  item: ItemConfig(
+                    icon: Icon(CupertinoIcons.search,
+                        size: 24),
+                    title: "Search",
+                      activeForegroundColor: CupertinoColors.activeOrange,
+                      inactiveForegroundColor: Colors.grey
+                  ),
+                ),
+                PersistentTabConfig(
+                  screen: LibraryScreen(),
+                  item: ItemConfig(
+                    icon: Icon(CupertinoIcons.music_albums,
+                        size: 24),
+                    title: "Library",
+                      activeForegroundColor: CupertinoColors.activeOrange,
+                      inactiveForegroundColor: Colors.grey
+                  ),
+                ),
+                PersistentTabConfig(
+                  screen: SettingScreen(),
+                  item: ItemConfig(
+                    icon: Icon(CupertinoIcons.settings,
+                        size: 24),
+                    title: "Settings",
+                      activeForegroundColor: CupertinoColors.activeOrange,
+                      inactiveForegroundColor: Colors.grey
+                  ),
+                ),
+              ],
               ),
+              decoration: BoxDecoration(color: Colors.black),
             ),
-            Expanded(
-              child: _buildScreens()[bpcontroller.index], // Display current screen based on index
-            ),
+            /*Expanded(
+              child: [bpcontroller.index], // Display current screen based on index
+            ),*/
           ],
         ),
         Positioned(
@@ -127,57 +177,5 @@ class _HomeScreenState extends State<HomeScreen> with ChangeNotifier, TickerProv
         )
       ],
     );
-  }
-
-
-  List<Widget> _buildScreens() {
-
-    return [
-      StartScreen(),
-      SearchScreen(),
-      LibraryScreen(),
-      SettingScreen()
-    ];
-  }
-
-  List<PersistentBottomNavBarItem> _navBarsItems() {
-    return [
-      PersistentBottomNavBarItem(
-        icon: Icon(
-            CupertinoIcons.house_fill,
-            size: 24),
-        title: ("Home"),
-        activeColorPrimary: CupertinoColors.activeOrange,
-        inactiveColorPrimary: CupertinoColors.systemGrey,
-      ),
-      PersistentBottomNavBarItem(
-        icon: GestureDetector(
-
-            child: Icon(CupertinoIcons.search, size: 24)),
-        title: ("Search"),
-        activeColorPrimary: CupertinoColors.activeOrange,
-        inactiveColorPrimary: CupertinoColors.systemGrey,
-      ),
-      PersistentBottomNavBarItem(
-        icon: GestureDetector(
-
-            child: Icon(CupertinoIcons.music_albums, size: 24)),
-        title: ("Library"),
-        activeColorPrimary: CupertinoColors.activeOrange,
-        inactiveColorPrimary: CupertinoColors.systemGrey,
-      ),
-      PersistentBottomNavBarItem(
-        icon: GestureDetector(
-            /*onTap: (){
-              setState(() {
-                _controller.index = 3;
-              });
-            },*/
-            child: Icon(CupertinoIcons.settings, size: 24)),
-        title: ("Settings"),
-        activeColorPrimary: CupertinoColors.activeOrange,
-        inactiveColorPrimary: CupertinoColors.systemGrey,
-      ),
-    ];
   }
 }

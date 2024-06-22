@@ -28,7 +28,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:hive_flutter/adapters.dart';
 import 'package:palette_generator/palette_generator.dart';
-import 'package:persistent_bottom_nav_bar/persistent_tab_view.dart';
+import 'package:persistent_bottom_nav_bar_v2/persistent_bottom_nav_bar_v2.dart';
+
 import 'package:provider/provider.dart';
 import 'package:verve/screens/playlist_screen.dart';
 import 'package:verve/screens/premium_screen.dart';
@@ -204,27 +205,63 @@ class _LibraryScreenState extends State<LibraryScreen> {
                       height: 50,
                       color: Colors.black,
                       child: PersistentTabView(
-                        context,
                         controller: _controller,
-                        screens: _buildScreens(),
-                        items: _navBarsItems(),
-                        confineInSafeArea: true,
+                        backgroundColor: Colors.black,
                         handleAndroidBackButtonPress: true,
                         resizeToAvoidBottomInset: true,
                         stateManagement: true,
-                        hideNavigationBarWhenKeyboardShows: true,
                         popAllScreensOnTapOfSelectedTab: true,
                         popActionScreens: PopActionScreensType.all,
-                        itemAnimationProperties: ItemAnimationProperties(
-                          duration: Duration(milliseconds: 200),
-                          curve: Curves.ease,
-                        ),
+
                         screenTransitionAnimation: ScreenTransitionAnimation(
-                          animateTabTransition: true,
                           curve: Curves.ease,
                           duration: Duration(milliseconds: 200),
                         ),
-                        navBarStyle: NavBarStyle.style12,
+                        navBarBuilder: (navBarConfig) =>
+                            Style12BottomNavBar(
+                                navBarConfig: navBarConfig
+                            ), tabs: [
+                        PersistentTabConfig(
+                          screen: StartScreen(),
+                          item: ItemConfig(
+                              icon: Icon(CupertinoIcons.house_fill,
+                                  size: 24),
+                              title: "Home",
+                              activeForegroundColor: CupertinoColors.activeOrange,
+                              inactiveForegroundColor: Colors.grey
+                          ),
+                        ),
+                        PersistentTabConfig(
+                          screen: SearchScreen(),
+                          item: ItemConfig(
+                              icon: Icon(CupertinoIcons.search,
+                                  size: 24),
+                              title: "Search",
+                              activeForegroundColor: CupertinoColors.activeOrange,
+                              inactiveForegroundColor: Colors.grey
+                          ),
+                        ),
+                        PersistentTabConfig(
+                          screen: LibraryScreen(),
+                          item: ItemConfig(
+                              icon: Icon(CupertinoIcons.music_albums,
+                                  size: 24),
+                              title: "Library",
+                              activeForegroundColor: CupertinoColors.activeOrange,
+                              inactiveForegroundColor: Colors.grey
+                          ),
+                        ),
+                        PersistentTabConfig(
+                          screen: SettingScreen(),
+                          item: ItemConfig(
+                              icon: Icon(CupertinoIcons.settings,
+                                  size: 24),
+                              title: "Settings",
+                              activeForegroundColor: CupertinoColors.activeOrange,
+                              inactiveForegroundColor: Colors.grey
+                          ),
+                        ),
+                      ],
                       ),
                     ),
                     Expanded(
@@ -586,62 +623,6 @@ class _LibraryScreenState extends State<LibraryScreen> {
     );*/
   }
 
-  List<PersistentBottomNavBarItem> _navBarsItems() {
-    return [
-      PersistentBottomNavBarItem(
-        icon: GestureDetector(
-          onTap: (){
-            setState(() {
-              _controller.index = 0;
-            });
-          },
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Center(
-                  child: Text("My Playlists",
-                    style: TextStyle(
-                        color: Colors.black,
-                        fontSize: 20,
-                        fontWeight: FontWeight.w500),
-                  ),
-              ),
-            ],
-          ),
-        ),
-        title: ("My Playlists"),
-        activeColorPrimary: CupertinoColors.activeOrange,
-        inactiveColorPrimary: CupertinoColors.systemGrey,
-
-      ),
-      PersistentBottomNavBarItem(
-        icon: GestureDetector(
-          onTap: (){
-            setState(() {
-              _controller.index = 1;
-            });
-
-          },
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Center(
-                child: Text("YouTube Playlists",
-                  style: TextStyle(
-                      color: Colors.black,
-                      fontSize: 20,
-                      fontWeight: FontWeight.w500),
-                ),
-              ),
-            ],
-          ),
-        ),
-        title: ("YouTube Playlists"),
-        activeColorPrimary: CupertinoColors.activeOrange,
-        inactiveColorPrimary: CupertinoColors.systemGrey,
-      ),
-    ];
-  }
   Future<void> _updateAlbumBgColor(String thumbnailUrl) async {
     final ABmodel = context.read<AlbumModel>();
     PaletteGenerator paletteGenerator =

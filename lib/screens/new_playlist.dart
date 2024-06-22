@@ -78,7 +78,6 @@ class _NewPlaylistState extends State<NewPlaylist> {
       List<String> local_names = await box.get('local_names') ?? <String>[];
 
       if (!playlistExists) {
-
         setState((){
           local_names.add(playlistName);
           nav.playlist.add(playlistName);

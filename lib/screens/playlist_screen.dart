@@ -3,7 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:hive_flutter/adapters.dart';
 import 'package:palette_generator/palette_generator.dart';
-import 'package:persistent_bottom_nav_bar/persistent_tab_view.dart';
+import 'package:persistent_bottom_nav_bar_v2/persistent_bottom_nav_bar_v2.dart';
+
 import 'package:provider/provider.dart';
 
 import '../models/album.dart';
@@ -152,18 +153,14 @@ class _MyPlaylistsScreenState extends State<MyPlaylistsScreen> {
                                             songDetails['tUrl'].toString(),
                                             songDetails['vId'].toString(),
                                             songDetails['tUrl'].toString());*/
-                                PersistentNavBarNavigator
-                                    .pushNewScreen(
+                                pushScreen(
                                   context,
                                   screen: MySongs(
                                       playlistId: nav
                                           .local_playlists[index], index: index),
-                                  withNavBar:
-                                  true,
-                                  pageTransitionAnimation:
-                                  PageTransitionAnimation
-                                      .cupertino,
+                                  withNavBar: true,
                                 );
+
                               },
                               leading: Padding(
                                 padding: const EdgeInsets.only(right: 8.0),

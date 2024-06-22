@@ -53,7 +53,7 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   @override
-  initState() {
+  initState()  {
     getName();
     makePlaylist('My Songs','vjv_dsc_Sdc_SDc_Dvds_Vd');
     makePlaylist('blank','oiugh_isdfvj_kjhs_vcj_sd');
@@ -164,11 +164,12 @@ class _SplashScreenState extends State<SplashScreen> {
     print("oooooooooo");
     final box = await Hive.openBox('playlists');
     print("kkkkkkkkkk");
-    List<dynamic> storedPlaylists = box.get('local_playlists', defaultValue: []);
+    List<dynamic> storedPlaylists = box.get('playlists', defaultValue: []);
     //bool playlistExists = storedPlaylists.any((playlist) => playlist['name'] == playlistName);
     List<String> local_names = await box.get('local_names') ?? <String>[];
     print("length of names: ${local_names.length}");
-    for(int i = 0; i < local_names.length; i++){
+
+    for(int i = 2; i < local_names.length; i++){
       nav.playlist.add(local_names[i]);
       /*List<dynamic> songs = mySongsPlaylist['songs'];
       var song = songs[i];
@@ -269,6 +270,7 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   Future<void> makePlaylist(String playlistName, String playlistId) async {
+
     final model  = context.read<BottomPlayerModel>();
     final nav    = Provider.of<Playlists>(context, listen: false);
     var playlistProvider = Provider.of<PlaylistProvider>(context, listen: false);
@@ -276,19 +278,19 @@ class _SplashScreenState extends State<SplashScreen> {
     try {
       final box = await Hive.openBox('playlists');
       List<dynamic> playlists = box.get('playlists', defaultValue: []);
-      bool playlistExists = playlists.any((playlist) => playlist['id'] == playlistId);
+      List<String> local_names = await box.get('local_names') ?? <String>[];
+      bool playlistExists = playlists.any((playlist) => playlist['name'] == playlistName);
 
       if (!playlistExists) {
         setState(() {
-
           if(playlistId.substring(0, 2) == 'PL'){
             nav.playlist.add(playlistId);
             playlistProvider.updateYoutubePlaylist(nav.playlist);
           }else{
+            local_names.add(playlistName);
             nav.playlist.add(playlistName);
             playlistProvider.updateLocalPlaylist(nav.playlist);
           }
-
         });
 
         // Add the new playlist
@@ -300,7 +302,10 @@ class _SplashScreenState extends State<SplashScreen> {
           'NumOfSongs': 0,
           'songs': []
         });
+
+        await box.put('local_names', local_names);
         await box.put('playlists', playlists);
+
         print('Playlist $playlistName created successfully.');
       } else {
         print('Playlist $playlistName already exists.');

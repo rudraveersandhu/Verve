@@ -29,7 +29,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/adapters.dart';
 import 'package:palette_generator/palette_generator.dart';
-import 'package:persistent_bottom_nav_bar/persistent_tab_view.dart';
+import 'package:persistent_bottom_nav_bar_v2/persistent_bottom_nav_bar_v2.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:verve/models/album.dart';
 import 'package:verve/screens/my_songs.dart';
@@ -687,8 +687,6 @@ class _StartScreenState extends State<StartScreen> with TickerProviderStateMixin
                                             GestureDetector(
                                               onTap: () async {
                                                 selectedPlaylist = nav.local_playlists[0];
-
-
                                                 final ABmodel = Provider.of<AlbumModel>(context, listen: false);
                                                 //await _updateAlbumBgColor("model.rows[index][1].url");
                                                 getLocalPlaylistData(0);
@@ -700,11 +698,11 @@ class _StartScreenState extends State<StartScreen> with TickerProviderStateMixin
                                                   ABmodel.playlistLength = 3;
                                                 });
                                                 //print("Selected Playlist:$selectedPlaylist");
-
-                                                PersistentNavBarNavigator.pushNewScreen(
+                                                pushScreen(
                                                   context,
-                                                  screen: MySongs(playlistId: selectedPlaylist, index: 0), withNavBar: true,
-                                                  pageTransitionAnimation: PageTransitionAnimation.cupertino,);
+                                                  screen: MySongs(playlistId: selectedPlaylist, index: 0),
+                                                  withNavBar: true,
+                                                );
 
                                               },
                                               child: Container(
@@ -947,13 +945,13 @@ class _StartScreenState extends State<StartScreen> with TickerProviderStateMixin
                                         width: MediaQuery.of(context).size.width,
                                         child: ListView.builder(
                                           padding: EdgeInsets.zero,
-                                          itemCount: (nav.local_playlists.length/2).ceil(),
+                                          itemCount: (nav.local_playlists.length/2).ceil() ,
                                           itemBuilder: (context, index) {
                                             final int firstItemIndex = index * 2;
                                             final int secondItemIndex = index * 2 + 1;
-                                            print("Looping index: ${nav.local_playlists.length}");
 
-                                            if(nav.local_playlists[index] != 'My Songs' ){
+                                            print("Looping index: ${index}");
+
                                               return Padding(
                                                 padding:
                                                 const EdgeInsets.only(
@@ -990,10 +988,12 @@ class _StartScreenState extends State<StartScreen> with TickerProviderStateMixin
                                                           });
                                                           //print("Selected Playlist:$selectedPlaylist");
 
-                                                          PersistentNavBarNavigator.pushNewScreen(
+                                                          pushScreen(
                                                             context,
-                                                            screen: MySongs(playlistId: selectedPlaylist, index: firstItemIndex), withNavBar: true,
-                                                            pageTransitionAnimation: PageTransitionAnimation.cupertino,);
+                                                            screen: MySongs(playlistId: selectedPlaylist, index: firstItemIndex),
+                                                            withNavBar: true,
+                                                          );
+
                                                         },
                                                         child:
                                                         AnimatedContainer(
@@ -1122,18 +1122,14 @@ class _StartScreenState extends State<StartScreen> with TickerProviderStateMixin
                                                           print('Tapped index: $secondItemIndex');
                                                           setState(
                                                                   () {
-                                                                PersistentNavBarNavigator
-                                                                    .pushNewScreen(
-                                                                  context,
-                                                                  screen: MySongs(
-                                                                      playlistId:
-                                                                      nav.local_playlists[secondItemIndex],
-                                                                      index: secondItemIndex),
-                                                                  withNavBar:
-                                                                  true,
-                                                                  pageTransitionAnimation:
-                                                                  PageTransitionAnimation.cupertino,
-                                                                );
+                                                                    pushScreen(
+                                                                      context,
+                                                                      screen: MySongs(
+                                                                          playlistId:
+                                                                          nav.local_playlists[secondItemIndex],
+                                                                          index: secondItemIndex),
+                                                                      withNavBar: true,
+                                                                    );
                                                               });
                                                         },
                                                         child:
@@ -1230,9 +1226,6 @@ class _StartScreenState extends State<StartScreen> with TickerProviderStateMixin
                                                   ],
                                                 ),
                                               );
-                                            } else {
-                                              return Container();
-                                            }
                                           },
                                         )
                                       ),
@@ -1448,10 +1441,12 @@ class _StartScreenState extends State<StartScreen> with TickerProviderStateMixin
                     ABmodel.playlistLength = model.rows[x].length;
                   });
 
-                  PersistentNavBarNavigator.pushNewScreen(
+                  pushScreen(
                     context,
-                    screen: AlbumCollection(x), withNavBar: true,
-                    pageTransitionAnimation: PageTransitionAnimation.cupertino,);
+                    screen: AlbumCollection(x),
+                    withNavBar: true,
+                  );
+
                 },
                 child: Padding(
                   padding: const EdgeInsets.only(
@@ -1658,10 +1653,11 @@ class _StartScreenState extends State<StartScreen> with TickerProviderStateMixin
 
   getLocalPlaylistData(int index) async {
     final box = await Hive.openBox('savedPlaylist');
+    final model = context.read<BottomPlayerModel>();
     //var playlistProvider = Provider.of<PlaylistProvider>(context, listen: false);
     //List<String> local_names = await box.get('local_names') ?? <String>[];
     List<List<String>> songs = await box.get('songs') ?? List<List<String>>.empty();
-    final model = context.read<BottomPlayerModel>();
+
     model.local_rows = songs[index];
   }
 

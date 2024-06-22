@@ -54,6 +54,7 @@ Future<void> main() async {
     await Hive.initFlutter();
   }
 
+
   runApp(
     MultiProvider(
       providers: [
@@ -79,6 +80,8 @@ Future<void> main() async {
   );
 }
 
+
+
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
@@ -87,11 +90,11 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Verve',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
+      /*theme: ThemeData(
         colorScheme:
             ColorScheme.fromSeed(seedColor: Colors.transparent),
         useMaterial3: true,
-      ),
+      ),*/
       home: const SplashScreen(),
     );
   }
